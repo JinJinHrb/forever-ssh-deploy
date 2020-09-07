@@ -1,4 +1,4 @@
-import { dest, series, src } from 'gulp';
+import { dest, series, src, task } from 'gulp';
 import babel from 'gulp-babel';
 import del from 'gulp-clean';
 import eslint from 'gulp-eslint';
@@ -9,7 +9,11 @@ function build () {
 		.pipe(sourcemaps.init())
 		.pipe(babel())
 		.pipe(sourcemaps.write('.'))
-		.pipe(dest('dist'));
+		.pipe(dest('dist'))
+}
+
+function copy () {
+	return src(['src/**/*.sh']).pipe(dest('dist'))
 }
 
 function clean () {
@@ -24,7 +28,7 @@ function lint () {
 		.pipe(eslint.failAfterError());
 }
 
-exports.build = series(clean, build);
+exports.build = series(clean, build, copy);
 exports.clean = clean;
-exports.default = series(clean, lint, build);
+exports.default = series(clean, lint, build, copy);
 exports.lint = lint;
