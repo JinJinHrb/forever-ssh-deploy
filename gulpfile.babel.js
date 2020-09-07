@@ -12,13 +12,13 @@ function build () {
 		.pipe(dest('dist'))
 }
 
-function copy () {
-	return src(['src/**/*.sh']).pipe(dest('dist'))
-}
-
 function clean () {
 	return src(['dist', 'reports'], { allowEmpty : true, read : false })
 		.pipe(del());
+}
+
+function copy () {
+	return src(['src/**/*.sh']).pipe(dest('dist'))
 }
 
 function lint () {
