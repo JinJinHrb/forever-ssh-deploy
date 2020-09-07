@@ -1,4 +1,4 @@
-const Deploy = require('../src/deploy');
+const Deploy = require('forever-ssh-deploy');
 
 const author = 'your name';
 const srcFolderPath = 'the path for the local project sub folder which is to replace the remote counterpart';
