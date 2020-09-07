@@ -10,13 +10,13 @@ npm install forever-ssh-deploy
 
 ## Deployment Process
 
-1. zip the source folder[srcFolderPath]
+1. zip the source folder [srcFolderPath]
 
 2. upload the zip file onto the server via SFTP (only private key authentication)
 
-3. unzip and exec script
+3. unzip and execute bash script to restart the project
     
-    * the default script use forever to start index.js located at the parent folder for "destFolderPath"
+    * the default script use [forever](https://github.com/foreversd/forever) to start "index.js" located at the parent folder of the remote folder [destFolderPath]
 
     * you can override the bash script via field "initScript" in constructor arguments for Deploy
 
