@@ -1,12 +1,11 @@
 /* eslint-disable arrow-parens */
-let Path, ssh;
-Path = require('path')
-const fs = require('fs')
-const Q = require('q');
-const zipFolder = require('zip-folder');
-const _L = require('lodash');
-const hdlUtil = require(Path.resolve(__dirname, 'helpers/hdlUtil'));
-const { NodeSSH } = require('node-ssh')
+import Path from 'path'
+import fs from 'fs'
+import Q from 'q';
+import zipFolder from 'zip-folder';
+import _L from 'lodash';
+import hdlUtil from './helpers/hdlUtil';
+import { NodeSSH } from 'node-ssh'
 
 class Deploy {
     constructor (args = {}) {
@@ -109,6 +108,7 @@ class Deploy {
         const parentDestFolderPath = destFolderPath.slice(0, lastSlashIdx);
         const destFilePath = Path.resolve(parentDestFolderPath, zipFileName);
         const localBashFilePath = Path.resolve(__dirname, '.backupServer.sh');
+        const _this = this;
         (() => {
             // eslint-disable-next-line no-sync
             if(fs.existsSync(zipPath)){
@@ -128,7 +128,7 @@ class Deploy {
                 })
             })
         }).then(( feed ) => {
-            ssh = new NodeSSH();
+            _this.ssh = new NodeSSH();
             const sshOptions = {
                 host,
                 port: 22,
@@ -137,10 +137,10 @@ class Deploy {
             }
             const sshOptionsCopy = { ...sshOptions };
             delete sshOptionsCopy.privateKey;
-            return ssh.connect(sshOptions);
+            return _this.ssh.connect(sshOptions);
         }).then(() => {
             return Q.promise((rsv, rej) => {
-                ssh.putFile(zipPath, destFilePath).then(function () {
+                _this.ssh.putFile(zipPath, destFilePath).then(function () {
                     rsv({ destFilePath, msg: 'OK', zipPath });
                 }, function (error) {
                     rej(error);
@@ -148,7 +148,7 @@ class Deploy {
             })
         /* }).then(function () {
             return Q.promise((rsv, rej) => {
-                ssh.exec('ls', ['-l', zipFileName], {
+                _this.ssh.exec('ls', ['-l', zipFileName], {
                     cwd: parentDestFolderPath,
                     onStdout (chunk) {
                         const str = chunk.toString('utf8');
@@ -177,23 +177,23 @@ class Deploy {
         }).then(() => {
             const remoteBashFilePath = Path.resolve(parentDestFolderPath, 'backupServer.sh');
             return Q.promise((rsv, rej) => {
-                ssh.putFile(localBashFilePath, remoteBashFilePath).then(function () {
+                _this.ssh.putFile(localBashFilePath, remoteBashFilePath).then(function () {
                     rsv({ destFilePath, msg: 'OK', zipPath });
                 }, function (error) {
                     rej(error);
                 })
             })
         }).then(() => {
-            return ssh.execCommand('chmod +x backupServer.sh', { cwd: parentDestFolderPath })
+            return _this.ssh.execCommand('chmod +x backupServer.sh', { cwd: parentDestFolderPath })
         }).then(() => {
-            return ssh.execCommand('./backupServer.sh', { cwd: parentDestFolderPath });
+            return _this.ssh.execCommand('./backupServer.sh', { cwd: parentDestFolderPath });
         }).then(() => {
             const qAll = [];
             qAll.push( this.removeFilePromise(zipPath) );
             qAll.push( this.removeFilePromise(localBashFilePath) );
             return Q.all(qAll);
         }).then(() => {
-            ssh.dispose();
+            _this.ssh.dispose();
         }).done(null, err => {
             if (!err) {
                 return;

@@ -1,11 +1,11 @@
 /**
  * Created by WangFan on 14/11/10.
  */
-const xss = require('xss');
-const _L = require('lodash');
-const CircularJSON = require('circular-json');
-const Base64 = require('./base64.js').Base64;
-const hdlValidateUtil = require('./hdlValidateUtil');
+import Q from 'q';
+import xss from 'xss';
+import _L from 'lodash';
+import CircularJSON from 'circular-json';
+import hdlValidateUtil from './hdlValidateUtil';
 const xConstUtil = {
     datesDesc: {
         en: {
@@ -17,7 +17,6 @@ const xConstUtil = {
         }
     }
 };
-const Q = require('q')
 
 module.exports.drawUrl = function (str) {
     var regUrl = /(htt(p|ps):\/\/[A-Za-z.\d/?&;\\=\\-\\#_(\u4e00-\u9fa5)]+)/gi;
@@ -1369,34 +1368,6 @@ module.exports.replaceAll = function(str, before, after){
     return str;
 };
 
-/** 将数组转化为逗号分隔的 base64 字符串 */
-var escapeJoin = function(array){
-    if(arguments.length>0 && !array.length){
-        array = Array.prototype.slice.call(arguments);
-    }
-    var i, len, elem, tempArr=[];
-    for(i=0, len=array.length; i<len; i++){
-        elem = array[i];
-        elem = Base64.encode(elem);
-        tempArr.push(elem);
-    }
-    return tempArr.join(',');
-};
-module.exports.escapeJoin = escapeJoin;
-
-/** 将逗号分隔的 base64 字符串转化为数组 */
-var escapeSplit = function(str){
-    var array = str.split(',');
-    var i, len, elem, tempArr=[];
-    for(i=0, len=array.length; i<len; i++){
-        elem = array[i];
-        elem = Base64.decode(elem);
-        tempArr.push(elem);
-    }
-    return tempArr;
-};
-module.exports.escapeSplit = escapeSplit;
-
 /** 将数组转化为特殊字符 ch 分隔的 自转义字符串 */
 var joinEscapeCustomizer = function(arr, ch){
     const escapeChars = ['^', '$'];
@@ -2137,31 +2108,6 @@ const getAirportCHN = (airport) => {
     return airportCHN;
 };
 module.exports.getAirportCHN = getAirportCHN;
-
-const lazyRequirePromise = (ref, path, options) => {
-    if(!options){
-        options = {};
-    }
-    let {repeat, interval = 500, maxRepeat = 5} = options;
-    if(!isEmptyObject(ref)){
-        return;
-    }
-    const tmp = require(path);
-    if(!isEmptyObject(tmp)){
-        Object.keys(tmp).forEach(k => {
-            ref[k] = tmp[k];
-        });
-        return;
-    }
-    if(repeat > maxRepeat){
-        return;
-    }
-    repeat++;
-    setTimeout(() => {
-        lazyRequirePromise(ref, path, {repeat, interval, maxRepeat});
-    }, interval);
-}
-module.exports.lazyRequirePromise = lazyRequirePromise;
 
 /** 判断字符串是否包含关键字列表中的某一项 */
 const hasKeyWords = (str, arr) => {

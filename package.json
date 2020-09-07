@@ -2,7 +2,7 @@
   "name": "simple-ssh-deploy",
   "version": "2.0.1",
   "description": "proxies requests ",
-  "main": "dist/socks5.js",
+  "main": "dist/deploy.js",
   "scripts": {
     "build": "gulp build",
     "lint": "gulp lint",
@@ -12,11 +12,8 @@
     "test": "gulp lint",
     "posttest": "gulp build"
   },
-  "author": "https://github.com/brozeph",
-  "contributors": [
-    "https://github.com/pronskiy",
-    "https://github.com/fabiensk"
-  ],
+  "author": "https://github.com/JinJinHrb",
+  "contributors": [],
   "license": "MIT",
   "keywords": [
     "ssh",
@@ -24,10 +21,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/brozeph/simple-ssh-deploy.git"
+    "url": "https://github.com/JinJinHrb/simple-ssh-deploy.git"
   },
   "bugs": {
-    "url": "http://github.com/brozeph/simple-ssh-deploy/issues"
+    "url": "http://github.com/JinJinHrb/simple-ssh-deploy/issues"
   },
   "dependencies": {
     "@babel/polyfill": "^7.8.7",
