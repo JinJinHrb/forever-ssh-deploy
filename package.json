@@ -1,7 +1,7 @@
 {
   "name": "forever-ssh-deploy",
-  "version": "1.0.0",
-  "description": "proxies requests ",
+  "version": "1.0.1",
+  "description": "deployement tool via SFTP",
   "main": "dist/deploy.js",
   "scripts": {
     "build": "gulp build",
