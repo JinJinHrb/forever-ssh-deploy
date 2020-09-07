@@ -1,4 +1,4 @@
-# Simple SSH Deploy
+# Forver SSH Deploy
 
 a simple deployment tool for node.js
 
