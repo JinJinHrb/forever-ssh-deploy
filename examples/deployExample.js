@@ -1,19 +1,3 @@
-# Simple SSH Deploy
-
-a simple deployment tool for node.js
-
-## Installation
-
-```
-npm install simple-ssh-deploy
-```
-
-## Example Usage
-
-In the [examples](examples/) folder exists an example.
-Five mandatory fields for argument is: author, srcFolderPath, destFolderPath, privateKeyPath, host, username
-
-```javascript
 const Deploy = require('../src/deploy');
 
 const author = 'your name';
@@ -27,4 +11,3 @@ const deployer = new Deploy({
     author, srcFolderPath, destFolderPath, privateKeyPath, host, username
 })
 deployer.exec();
-```

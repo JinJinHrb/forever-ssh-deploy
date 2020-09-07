@@ -9,8 +9,14 @@ const hdlUtil = require(Path.resolve(__dirname, 'helpers/hdlUtil'));
 const { NodeSSH } = require('node-ssh')
 
 class Deploy {
-    
     constructor (args = {}) {
+        const mandatoryFields = ['author', 'srcFolderPath', 'destFolderPath', 'privateKeyPath', 'host', 'username'];
+        // const optionalFields = ['initScript'];
+        for(let fd of mandatoryFields){
+            if(!hdlUtil.getDeepVal(args, fd)){
+                throw new Error(`mandatory field "${fd}" is missing`);
+            }
+        }
         this.args = args;
     }
 
@@ -19,7 +25,7 @@ class Deploy {
             return Q.resolve(this.args.initScript);
         }
         return Q.promise((rsv, rej) => {
-            const bashFilePath = Path.resolve(__dirname, 'backupServer.sh');
+            const bashFilePath = Path.resolve(__dirname, 'helpers/backupServer.sh');
             fs.readFile(bashFilePath, 'utf8', (err, rst) => {
                 if (err) {
                     return rej(err);
@@ -29,9 +35,9 @@ class Deploy {
                 }else{
                     const regex = new RegExp('server', 'g');
                     rst = rst.replace(regex, leafFolderName);
-                    if(this.author){
+                    if(this.args.author){
                         const regex2 = new RegExp('改前', 'g');
-                        rst = rst.replace(regex2, this.author);
+                        rst = rst.replace(regex2, this.args.author);
                     }
                     rsv(rst);
                 }
@@ -101,7 +107,7 @@ class Deploy {
         }
         const parentDestFolderPath = destFolderPath.slice(0, lastSlashIdx);
         const destFilePath = Path.resolve(parentDestFolderPath, zipFileName);
-        const localBashFilePath = Path.resolve(__dirname, '.backupServer.sh');
+        const localBashFilePath = Path.resolve(__dirname, 'helpers/backupServer.sh');
         (() => {
             // eslint-disable-next-line no-sync
             if(fs.existsSync(zipPath)){
@@ -158,7 +164,6 @@ class Deploy {
         }).then(() => {
             return this.getInitScriptPromise(leafFolderName);
         }).then(feed => {
-            // return fs.writeFile(localBashFilePath, feed)
             return Q.promise((rsv, rej) => {
                 fs.writeFile(localBashFilePath, feed, { encoding: 'utf8', mode: 0o644, flag: 'w' }, (err, rst) => {
                     if(err){
