@@ -24,21 +24,22 @@ class Deploy {
         if ( this.args.initScript ) {
             return Q.resolve(this.args.initScript);
         }
+        const author = this.args.author;
         return Q.promise((rsv, rej) => {
             const bashFilePath = Path.resolve(__dirname, 'helpers/backupServer.sh');
             fs.readFile(bashFilePath, 'utf8', (err, rst) => {
                 if (err) {
                     return rej(err);
                 }
+                if(author){
+                    const regex2 = new RegExp('改前');
+                    rst = rst.replace(regex2, `.${author}.backup`);
+                }
                 if(!leafFolderName || leafFolderName === 'server'){
                     return rsv(rst);
                 }else{
                     const regex = new RegExp('server', 'g');
                     rst = rst.replace(regex, leafFolderName);
-                    if(this.args.author){
-                        const regex2 = new RegExp('改前', 'g');
-                        rst = rst.replace(regex2, this.args.author);
-                    }
                     rsv(rst);
                 }
             })
@@ -107,7 +108,7 @@ class Deploy {
         }
         const parentDestFolderPath = destFolderPath.slice(0, lastSlashIdx);
         const destFilePath = Path.resolve(parentDestFolderPath, zipFileName);
-        const localBashFilePath = Path.resolve(__dirname, 'helpers/backupServer.sh');
+        const localBashFilePath = Path.resolve(__dirname, '.backupServer.sh');
         (() => {
             // eslint-disable-next-line no-sync
             if(fs.existsSync(zipPath)){
