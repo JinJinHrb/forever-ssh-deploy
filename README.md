@@ -10,7 +10,7 @@ npm install simple-ssh-deploy
 
 ## Example Usage
 
-In the [examples](examples/) folder exists an example.
+There is an example in [examples](examples/) folder.
 Five mandatory fields for argument is: author, srcFolderPath, destFolderPath, privateKeyPath, host, username
 
 ```javascript
