@@ -5,7 +5,7 @@ a simple deployment tool for node.js
 ## Installation
 
 ```
-npm install simple-ssh-deploy
+npm install forever-ssh-deploy
 ```
 
 ## Example Usage
