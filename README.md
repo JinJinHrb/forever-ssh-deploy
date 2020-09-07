@@ -16,7 +16,7 @@ npm install forever-ssh-deploy
 
 3. unzip and execute bash script to restart the project
     
-    * the default script use [forever](https://github.com/foreversd/forever) to start "index.js" located at the parent folder of the remote folder [destFolderPath]
+    * the default script uses [forever](https://github.com/foreversd/forever) to start "index.js" located at the parent folder of the remote folder [destFolderPath]
 
     * you can override the bash script via field "initScript" in constructor arguments for Deploy
 
