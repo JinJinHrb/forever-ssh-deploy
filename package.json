@@ -1,6 +1,6 @@
 {
   "name": "forever-ssh-deploy",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "deployement tool via SFTP",
   "main": "dist/deploy.js",
   "scripts": {
@@ -21,10 +21,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/JinJinHrb/simple-ssh-deploy.git"
+    "url": "git+https://github.com/JinJinHrb/forever-ssh-deploy.git"
   },
   "bugs": {
-    "url": "http://github.com/JinJinHrb/simple-ssh-deploy/issues"
+    "url": "http://github.com/JinJinHrb/forever-ssh-deploy/issues"
   },
   "dependencies": {
     "@babel/polyfill": "^7.8.7",
@@ -53,7 +53,7 @@
     "gulp-eslint": "^6.0.0",
     "gulp-sourcemaps": "^2.6.5"
   },
-  "homepage": "https://github.com/JinJinHrb/simple-ssh-deploy#readme",
+  "homepage": "https://github.com/JinJinHrb/forever-ssh-deploy#readme",
   "directories": {
     "example": "examples"
   }
