@@ -12,7 +12,7 @@ npm install forever-ssh-deploy
 
 1. zip the source folder [srcFolderPath]
 
-2. upload the zip file onto the server via SFTP (only private key authentication)
+2. upload the zip file onto the server via SFTP (authentication by either private key or password)
 
 3. unzip and execute bash script to restart the project
     
