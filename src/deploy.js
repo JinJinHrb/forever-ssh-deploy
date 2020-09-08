@@ -114,12 +114,18 @@ class Deploy {
         const parentFolderPath = srcFolderPath.slice(0, lastSlashIdx);
         const zipPath = Path.resolve(parentFolderPath, zipFileName);
 
-        lastSlashIdx = destFolderPath.lastIndexOf(Path.sep);
+        let destPathSep;
+        if(destFolderPath.indexOf('/') !== 0 || destFolderPath.slice(0, 4).indexOf(':') > 0){
+            destPathSep = '\\';
+        }else{
+            destPathSep = '/';
+        }
+        lastSlashIdx = destFolderPath.lastIndexOf(destPathSep);
         if (lastSlashIdx === destFolderPath.length - 1) {
-            lastSlashIdx = destFolderPath.slice(0, -1).lastIndexOf(Path.sep);
+            lastSlashIdx = destFolderPath.slice(0, -1).lastIndexOf(destPathSep);
         }
         const parentDestFolderPath = destFolderPath.slice(0, lastSlashIdx);
-        const destFilePath = Path.resolve(parentDestFolderPath, zipFileName);
+        const destFilePath = `${parentDestFolderPath}${destPathSep}${zipFileName}`; // Path.resolve(parentDestFolderPath, zipFileName);
         const localBashFilePath = Path.resolve(__dirname, '.backupServer.sh');
         const _this = this;
         return Q.promise((rsvRoot, rejRoot) => {
@@ -200,7 +206,7 @@ class Deploy {
                     });
                 })
             }).then(() => {
-                const remoteBashFilePath = Path.resolve(parentDestFolderPath, 'backupServer.sh');
+                const remoteBashFilePath = `${parentDestFolderPath}${destPathSep}backupServer.sh`; // Path.resolve(parentDestFolderPath, 'backupServer.sh');
                 return Q.promise((rsv, rej) => {
                     _this.ssh.putFile(localBashFilePath, remoteBashFilePath).then(function () {
                         rsv({ destFilePath, msg: 'OK', zipPath });

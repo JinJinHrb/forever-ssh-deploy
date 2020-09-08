@@ -181,15 +181,22 @@ var Deploy = /*#__PURE__*/function () {
 
       var zipPath = _path["default"].resolve(parentFolderPath, zipFileName);
 
-      lastSlashIdx = destFolderPath.lastIndexOf(_path["default"].sep);
+      var destPathSep;
+
+      if (destFolderPath.indexOf('/') !== 0 || destFolderPath.slice(0, 4).indexOf(':') > 0) {
+        destPathSep = '\\';
+      } else {
+        destPathSep = '/';
+      }
+
+      lastSlashIdx = destFolderPath.lastIndexOf(destPathSep);
 
       if (lastSlashIdx === destFolderPath.length - 1) {
-        lastSlashIdx = destFolderPath.slice(0, -1).lastIndexOf(_path["default"].sep);
+        lastSlashIdx = destFolderPath.slice(0, -1).lastIndexOf(destPathSep);
       }
 
       var parentDestFolderPath = destFolderPath.slice(0, lastSlashIdx);
-
-      var destFilePath = _path["default"].resolve(parentDestFolderPath, zipFileName);
+      var destFilePath = "".concat(parentDestFolderPath).concat(destPathSep).concat(zipFileName); // Path.resolve(parentDestFolderPath, zipFileName);
 
       var localBashFilePath = _path["default"].resolve(__dirname, '.backupServer.sh');
 
@@ -291,7 +298,7 @@ var Deploy = /*#__PURE__*/function () {
             });
           });
         }).then(function () {
-          var remoteBashFilePath = _path["default"].resolve(parentDestFolderPath, 'backupServer.sh');
+          var remoteBashFilePath = "".concat(parentDestFolderPath).concat(destPathSep, "backupServer.sh"); // Path.resolve(parentDestFolderPath, 'backupServer.sh');
 
           return _q["default"].promise(function (rsv, rej) {
             _this.ssh.putFile(localBashFilePath, remoteBashFilePath).then(function () {
