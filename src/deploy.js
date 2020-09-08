@@ -34,6 +34,7 @@ class Deploy {
         if ( this.args.initScript ) {
             return Q.resolve(this.args.initScript);
         }
+        const destFolderPath = this.args.destFolderPath;
         const author = this.args.author;
         return Q.promise((rsv, rej) => {
             const bashFilePath = Path.resolve(__dirname, 'helpers/backupServer.sh');
@@ -45,6 +46,7 @@ class Deploy {
                     const regex2 = new RegExp('改前');
                     rst = rst.replace(regex2, `.${author}.backup`);
                 }
+                rst = rst.replace(/\$\{destFolderPath\}/g, destFolderPath);
                 if(!leafFolderName || leafFolderName === 'server'){
                     return rsv(rst);
                 }else{
@@ -214,7 +216,11 @@ class Deploy {
             qAll.push( this.removeFilePromise(zipPath) );
             qAll.push( this.removeFilePromise(localBashFilePath) );
             return Q.all(qAll);
-        }).then(() => {
+        })/* .then(() => {
+            const deferred = Q.defer();
+            setTimeout(function(){deferred.resolve()}, 10000);
+            return deferred.promise;
+        }) */.then(() => {
             _this.ssh.dispose();
         }).done(null, err => {
             if (!err) {

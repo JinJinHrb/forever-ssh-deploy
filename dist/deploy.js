@@ -66,6 +66,7 @@ var Deploy = /*#__PURE__*/function () {
         return _q["default"].resolve(this.args.initScript);
       }
 
+      var destFolderPath = this.args.destFolderPath;
       var author = this.args.author;
       return _q["default"].promise(function (rsv, rej) {
         var bashFilePath = _path["default"].resolve(__dirname, 'helpers/backupServer.sh');
@@ -79,6 +80,8 @@ var Deploy = /*#__PURE__*/function () {
             var regex2 = new RegExp('改前');
             rst = rst.replace(regex2, ".".concat(author, ".backup"));
           }
+
+          rst = rst.replace(/\$\{destFolderPath\}/g, destFolderPath);
 
           if (!leafFolderName || leafFolderName === 'server') {
             return rsv(rst);
@@ -313,7 +316,13 @@ var Deploy = /*#__PURE__*/function () {
         qAll.push(_this2.removeFilePromise(zipPath));
         qAll.push(_this2.removeFilePromise(localBashFilePath));
         return _q["default"].all(qAll);
-      }).then(function () {
+      })
+      /* .then(() => {
+        const deferred = Q.defer();
+        setTimeout(function(){deferred.resolve()}, 10000);
+        return deferred.promise;
+      }) */
+      .then(function () {
         _this.ssh.dispose();
       }).done(null, function (err) {
         if (!err) {
