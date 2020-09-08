@@ -22,8 +22,9 @@ npm install forever-ssh-deploy
 
 ## Example Usage
 
-There is an example in [examples](examples/) folder.
-Five mandatory fields for argument is: author, srcFolderPath, destFolderPath, privateKeyPath, host, username
+There are two example in [examples](examples/) folder. One is for SFTP certification with private key and another is for password.
+Five mandatory fields for argument is: author, srcFolderPath, destFolderPath, privateKeyPath | password, host, username
+Optional field: port
 
 ```javascript
 const Deploy = require('forever-ssh-deploy');

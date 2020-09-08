@@ -9,12 +9,23 @@ import { NodeSSH } from 'node-ssh'
 
 class Deploy {
     constructor (args = {}) {
-        const mandatoryFields = ['author', 'srcFolderPath', 'destFolderPath', 'privateKeyPath', 'host', 'username'];
+        const mandatoryFields = ['author', 'srcFolderPath', 'destFolderPath', 'host', 'username'];
+        const mandatoryOneFields = ['privateKeyPath', 'password']
         // const optionalFields = ['initScript'];
         for(let fd of mandatoryFields){
             if(!hdlUtil.getDeepVal(args, fd)){
                 throw new Error(`mandatory field "${fd}" is missing`);
             }
+        }
+        let isMandatoryOneOk = false; // 二选一
+        for(let fd of mandatoryOneFields){
+            if(hdlUtil.getDeepVal(args, fd)){
+                isMandatoryOneOk = true;
+                break;
+            }
+        }
+        if(!isMandatoryOneOk){
+            throw new Error(`mandatory field "privateKeyPath / password" is missing`);
         }
         this.args = args;
     }
@@ -86,7 +97,7 @@ class Deploy {
     }
 
     exec () {
-        const { srcFolderPath, destFolderPath, privateKeyPath, host, username } = this.args;
+        const { srcFolderPath, destFolderPath, privateKeyPath, host, port = 22, username, password } = this.args;
         let lastSlashIdx = srcFolderPath.lastIndexOf(Path.sep);
         if (lastSlashIdx === srcFolderPath.length - 1) {
             lastSlashIdx = srcFolderPath.slice(0, -1).lastIndexOf(Path.sep);
@@ -119,6 +130,13 @@ class Deploy {
         })().then(() => {
             return this.zipFolderHandler(srcFolderPath, { zipPath });
         }).then(() => {
+            if(!privateKeyPath || !fs.existsSync(privateKeyPath)){
+                if(password){
+                    return null;
+                }else{
+                    return Q.reject({code: 110, msg: 'no password'});
+                }
+            }
             return Q.promise((rsv, rej) => {
                 fs.readFile(privateKeyPath, 'utf8', (err, rst) => {
                     if (err) {
@@ -131,9 +149,13 @@ class Deploy {
             _this.ssh = new NodeSSH();
             const sshOptions = {
                 host,
-                port: 22,
-                privateKey: feed, // privateKeyPath
+                port,
                 username
+            }
+            if(feed){
+                sshOptions.privateKey = feed;
+            }else{
+                sshOptions.password = password;
             }
             const sshOptionsCopy = { ...sshOptions };
             delete sshOptionsCopy.privateKey;
