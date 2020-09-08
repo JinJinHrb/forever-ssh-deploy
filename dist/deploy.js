@@ -195,141 +195,152 @@ var Deploy = /*#__PURE__*/function () {
 
       var _this = this;
 
-      (function () {
-        // eslint-disable-next-line no-sync
-        if (_fs["default"].existsSync(zipPath)) {
-          return _this2.removeFilePromise(zipPath);
-        } else {
-          return _q["default"].resolve(null);
-        }
-      })().then(function () {
-        return _this2.zipFolderHandler(srcFolderPath, {
-          zipPath: zipPath
-        });
-      }).then(function () {
-        if (!privateKeyPath || !_fs["default"].existsSync(privateKeyPath)) {
-          if (password) {
-            return null;
+      return _q["default"].promise(function (rsvRoot, rejRoot) {
+        (function () {
+          // eslint-disable-next-line no-sync
+          if (_fs["default"].existsSync(zipPath)) {
+            return _this2.removeFilePromise(zipPath);
           } else {
-            return _q["default"].reject({
-              code: 110,
-              msg: 'no password'
-            });
+            return _q["default"].resolve(null);
           }
-        }
-
-        return _q["default"].promise(function (rsv, rej) {
-          _fs["default"].readFile(privateKeyPath, 'utf8', function (err, rst) {
-            if (err) {
-              return rej(err);
-            }
-
-            rsv(rst);
+        })().then(function () {
+          return _this2.zipFolderHandler(srcFolderPath, {
+            zipPath: zipPath
           });
-        });
-      }).then(function (feed) {
-        _this.ssh = new _nodeSsh.NodeSSH();
-        var sshOptions = {
-          host: host,
-          port: port,
-          username: username
-        };
-
-        if (feed) {
-          sshOptions.privateKey = feed;
-        } else {
-          sshOptions.password = password;
-        }
-
-        var sshOptionsCopy = _objectSpread({}, sshOptions);
-
-        delete sshOptionsCopy.privateKey;
-        return _this.ssh.connect(sshOptions);
-      }).then(function () {
-        return _q["default"].promise(function (rsv, rej) {
-          _this.ssh.putFile(zipPath, destFilePath).then(function () {
-            rsv({
-              destFilePath: destFilePath,
-              msg: 'OK',
-              zipPath: zipPath
-            });
-          }, function (error) {
-            rej(error);
-          });
-        });
-        /* }).then(function () {
-            return Q.promise((rsv, rej) => {
-                _this.ssh.exec('ls', ['-l', zipFileName], {
-                    cwd: parentDestFolderPath,
-                    onStdout (chunk) {
-                        const str = chunk.toString('utf8');
-                        console.log('#108 stdoutChunk:', str)
-                        rsv(str)
-                    },
-                    onStderr (chunk) {
-                        const str = chunk.toString('utf8');
-                        console.log('#113 stderrChunk:', str)
-                        rej(str);
-                    }
-                })
-            }) */
-      }).then(function () {
-        return _this2.getInitScriptPromise(leafFolderName);
-      }).then(function (feed) {
-        return _q["default"].promise(function (rsv, rej) {
-          _fs["default"].writeFile(localBashFilePath, feed, {
-            encoding: 'utf8',
-            mode: 420,
-            flag: 'w'
-          }, function (err, rst) {
-            if (err) {
-              rej(err);
+        }).then(function () {
+          if (!privateKeyPath || !_fs["default"].existsSync(privateKeyPath)) {
+            if (password) {
+              return null;
             } else {
-              rsv(rst);
+              return _q["default"].reject({
+                code: 110,
+                msg: 'no password'
+              });
             }
-          });
-        });
-      }).then(function () {
-        var remoteBashFilePath = _path["default"].resolve(parentDestFolderPath, 'backupServer.sh');
+          }
 
-        return _q["default"].promise(function (rsv, rej) {
-          _this.ssh.putFile(localBashFilePath, remoteBashFilePath).then(function () {
-            rsv({
-              destFilePath: destFilePath,
-              msg: 'OK',
-              zipPath: zipPath
+          return _q["default"].promise(function (rsv, rej) {
+            _fs["default"].readFile(privateKeyPath, 'utf8', function (err, rst) {
+              if (err) {
+                return rej(err);
+              }
+
+              rsv(rst);
             });
-          }, function (error) {
-            rej(error);
+          });
+        }).then(function (feed) {
+          _this.ssh = new _nodeSsh.NodeSSH();
+          var sshOptions = {
+            host: host,
+            port: port,
+            username: username
+          };
+
+          if (feed) {
+            sshOptions.privateKey = feed;
+          } else {
+            sshOptions.password = password;
+          }
+
+          var sshOptionsCopy = _objectSpread({}, sshOptions);
+
+          delete sshOptionsCopy.privateKey;
+          return _this.ssh.connect(sshOptions);
+        }).then(function () {
+          return _q["default"].promise(function (rsv, rej) {
+            _this.ssh.putFile(zipPath, destFilePath).then(function () {
+              rsv({
+                destFilePath: destFilePath,
+                msg: 'OK',
+                zipPath: zipPath
+              });
+            }, function (error) {
+              rej(error);
+            });
+          });
+          /* }).then(function () {
+              return Q.promise((rsv, rej) => {
+                  _this.ssh.exec('ls', ['-l', zipFileName], {
+                      cwd: parentDestFolderPath,
+                      onStdout (chunk) {
+                          const str = chunk.toString('utf8');
+                          console.log('#108 stdoutChunk:', str)
+                          rsv(str)
+                      },
+                      onStderr (chunk) {
+                          const str = chunk.toString('utf8');
+                          console.log('#113 stderrChunk:', str)
+                          rej(str);
+                      }
+                  })
+              }) */
+        }).then(function () {
+          return _this2.getInitScriptPromise(leafFolderName);
+        }).then(function (feed) {
+          return _q["default"].promise(function (rsv, rej) {
+            _fs["default"].writeFile(localBashFilePath, feed, {
+              encoding: 'utf8',
+              mode: 420,
+              flag: 'w'
+            }, function (err, rst) {
+              if (err) {
+                rej(err);
+              } else {
+                rsv(rst);
+              }
+            });
+          });
+        }).then(function () {
+          var remoteBashFilePath = _path["default"].resolve(parentDestFolderPath, 'backupServer.sh');
+
+          return _q["default"].promise(function (rsv, rej) {
+            _this.ssh.putFile(localBashFilePath, remoteBashFilePath).then(function () {
+              rsv({
+                destFilePath: destFilePath,
+                msg: 'OK',
+                zipPath: zipPath
+              });
+            }, function (error) {
+              rej(error);
+            });
+          });
+        }).then(function () {
+          return _this.ssh.execCommand('chmod +x backupServer.sh', {
+            cwd: parentDestFolderPath
+          });
+        }).then(function () {
+          return _this.ssh.execCommand('./backupServer.sh', {
+            cwd: parentDestFolderPath
+          });
+        }).then(function () {
+          var qAll = [];
+          qAll.push(_this2.removeFilePromise(zipPath));
+          qAll.push(_this2.removeFilePromise(localBashFilePath));
+          return _q["default"].all(qAll);
+        })
+        /* .then(() => {
+          const deferred = Q.defer();
+          setTimeout(function(){deferred.resolve()}, 10000);
+          return deferred.promise;
+        }) */
+        .then(function () {
+          _this.ssh.dispose();
+
+          rsvRoot({
+            code: 111,
+            msg: 'OK'
+          });
+        }).done(null, function (err) {
+          if (!err) {
+            return;
+          }
+
+          console.error('#75', err);
+          rsvRoot({
+            code: 110,
+            msg: 'ERROR'
           });
         });
-      }).then(function () {
-        return _this.ssh.execCommand('chmod +x backupServer.sh', {
-          cwd: parentDestFolderPath
-        });
-      }).then(function () {
-        return _this.ssh.execCommand('./backupServer.sh', {
-          cwd: parentDestFolderPath
-        });
-      }).then(function () {
-        var qAll = [];
-        qAll.push(_this2.removeFilePromise(zipPath));
-        qAll.push(_this2.removeFilePromise(localBashFilePath));
-        return _q["default"].all(qAll);
-      })
-      /* .then(() => {
-        const deferred = Q.defer();
-        setTimeout(function(){deferred.resolve()}, 10000);
-        return deferred.promise;
-      }) */
-      .then(function () {
-        _this.ssh.dispose();
-      }).done(null, function (err) {
-        if (!err) {
-          return;
-        }
-
-        console.error('#75', err);
       });
     }
   }]);

@@ -122,111 +122,115 @@ class Deploy {
         const destFilePath = Path.resolve(parentDestFolderPath, zipFileName);
         const localBashFilePath = Path.resolve(__dirname, '.backupServer.sh');
         const _this = this;
-        (() => {
-            // eslint-disable-next-line no-sync
-            if(fs.existsSync(zipPath)){
-                return this.removeFilePromise (zipPath);
-            }else{
-                return Q.resolve(null);
-            }
-        })().then(() => {
-            return this.zipFolderHandler(srcFolderPath, { zipPath });
-        }).then(() => {
-            if(!privateKeyPath || !fs.existsSync(privateKeyPath)){
-                if(password){
-                    return null;
+        return Q.promise((rsvRoot, rejRoot) => {
+            (() => {
+                // eslint-disable-next-line no-sync
+                if(fs.existsSync(zipPath)){
+                    return this.removeFilePromise (zipPath);
                 }else{
-                    return Q.reject({code: 110, msg: 'no password'});
+                    return Q.resolve(null);
                 }
-            }
-            return Q.promise((rsv, rej) => {
-                fs.readFile(privateKeyPath, 'utf8', (err, rst) => {
-                    if (err) {
-                        return rej(err);
-                    }
-                    rsv(rst);
-                })
-            })
-        }).then(( feed ) => {
-            _this.ssh = new NodeSSH();
-            const sshOptions = {
-                host,
-                port,
-                username
-            }
-            if(feed){
-                sshOptions.privateKey = feed;
-            }else{
-                sshOptions.password = password;
-            }
-            const sshOptionsCopy = { ...sshOptions };
-            delete sshOptionsCopy.privateKey;
-            return _this.ssh.connect(sshOptions);
-        }).then(() => {
-            return Q.promise((rsv, rej) => {
-                _this.ssh.putFile(zipPath, destFilePath).then(function () {
-                    rsv({ destFilePath, msg: 'OK', zipPath });
-                }, function (error) {
-                    rej(error);
-                })
-            })
-        /* }).then(function () {
-            return Q.promise((rsv, rej) => {
-                _this.ssh.exec('ls', ['-l', zipFileName], {
-                    cwd: parentDestFolderPath,
-                    onStdout (chunk) {
-                        const str = chunk.toString('utf8');
-                        console.log('#108 stdoutChunk:', str)
-                        rsv(str)
-                    },
-                    onStderr (chunk) {
-                        const str = chunk.toString('utf8');
-                        console.log('#113 stderrChunk:', str)
-                        rej(str);
-                    }
-                })
-            }) */
-        }).then(() => {
-            return this.getInitScriptPromise(leafFolderName);
-        }).then(feed => {
-            return Q.promise((rsv, rej) => {
-                fs.writeFile(localBashFilePath, feed, { encoding: 'utf8', mode: 0o644, flag: 'w' }, (err, rst) => {
-                    if(err){
-                        rej(err);
+            })().then(() => {
+                return this.zipFolderHandler(srcFolderPath, { zipPath });
+            }).then(() => {
+                if(!privateKeyPath || !fs.existsSync(privateKeyPath)){
+                    if(password){
+                        return null;
                     }else{
-                        rsv(rst);
+                        return Q.reject({code: 110, msg: 'no password'});
                     }
-                });
-            })
-        }).then(() => {
-            const remoteBashFilePath = Path.resolve(parentDestFolderPath, 'backupServer.sh');
-            return Q.promise((rsv, rej) => {
-                _this.ssh.putFile(localBashFilePath, remoteBashFilePath).then(function () {
-                    rsv({ destFilePath, msg: 'OK', zipPath });
-                }, function (error) {
-                    rej(error);
+                }
+                return Q.promise((rsv, rej) => {
+                    fs.readFile(privateKeyPath, 'utf8', (err, rst) => {
+                        if (err) {
+                            return rej(err);
+                        }
+                        rsv(rst);
+                    })
                 })
+            }).then(( feed ) => {
+                _this.ssh = new NodeSSH();
+                const sshOptions = {
+                    host,
+                    port,
+                    username
+                }
+                if(feed){
+                    sshOptions.privateKey = feed;
+                }else{
+                    sshOptions.password = password;
+                }
+                const sshOptionsCopy = { ...sshOptions };
+                delete sshOptionsCopy.privateKey;
+                return _this.ssh.connect(sshOptions);
+            }).then(() => {
+                return Q.promise((rsv, rej) => {
+                    _this.ssh.putFile(zipPath, destFilePath).then(function () {
+                        rsv({ destFilePath, msg: 'OK', zipPath });
+                    }, function (error) {
+                        rej(error);
+                    })
+                })
+            /* }).then(function () {
+                return Q.promise((rsv, rej) => {
+                    _this.ssh.exec('ls', ['-l', zipFileName], {
+                        cwd: parentDestFolderPath,
+                        onStdout (chunk) {
+                            const str = chunk.toString('utf8');
+                            console.log('#108 stdoutChunk:', str)
+                            rsv(str)
+                        },
+                        onStderr (chunk) {
+                            const str = chunk.toString('utf8');
+                            console.log('#113 stderrChunk:', str)
+                            rej(str);
+                        }
+                    })
+                }) */
+            }).then(() => {
+                return this.getInitScriptPromise(leafFolderName);
+            }).then(feed => {
+                return Q.promise((rsv, rej) => {
+                    fs.writeFile(localBashFilePath, feed, { encoding: 'utf8', mode: 0o644, flag: 'w' }, (err, rst) => {
+                        if(err){
+                            rej(err);
+                        }else{
+                            rsv(rst);
+                        }
+                    });
+                })
+            }).then(() => {
+                const remoteBashFilePath = Path.resolve(parentDestFolderPath, 'backupServer.sh');
+                return Q.promise((rsv, rej) => {
+                    _this.ssh.putFile(localBashFilePath, remoteBashFilePath).then(function () {
+                        rsv({ destFilePath, msg: 'OK', zipPath });
+                    }, function (error) {
+                        rej(error);
+                    })
+                })
+            }).then(() => {
+                return _this.ssh.execCommand('chmod +x backupServer.sh', { cwd: parentDestFolderPath })
+            }).then(() => {
+                return _this.ssh.execCommand('./backupServer.sh', { cwd: parentDestFolderPath });
+            }).then(() => {
+                const qAll = [];
+                qAll.push( this.removeFilePromise(zipPath) );
+                qAll.push( this.removeFilePromise(localBashFilePath) );
+                return Q.all(qAll);
+            })/* .then(() => {
+                const deferred = Q.defer();
+                setTimeout(function(){deferred.resolve()}, 10000);
+                return deferred.promise;
+            }) */.then(() => {
+                _this.ssh.dispose();
+                rsvRoot({code: 111, msg: 'OK'});
+            }).done(null, err => {
+                if (!err) {
+                    return;
+                }
+                console.error('#75', err);
+                rsvRoot({code: 110, msg: 'ERROR'});
             })
-        }).then(() => {
-            return _this.ssh.execCommand('chmod +x backupServer.sh', { cwd: parentDestFolderPath })
-        }).then(() => {
-            return _this.ssh.execCommand('./backupServer.sh', { cwd: parentDestFolderPath });
-        }).then(() => {
-            const qAll = [];
-            qAll.push( this.removeFilePromise(zipPath) );
-            qAll.push( this.removeFilePromise(localBashFilePath) );
-            return Q.all(qAll);
-        })/* .then(() => {
-            const deferred = Q.defer();
-            setTimeout(function(){deferred.resolve()}, 10000);
-            return deferred.promise;
-        }) */.then(() => {
-            _this.ssh.dispose();
-        }).done(null, err => {
-            if (!err) {
-                return;
-            }
-            console.error('#75', err);
         })
     }
 
