@@ -6,6 +6,18 @@ import zipFolder from 'zip-folder';
 import _L from 'lodash';
 import hdlUtil from './helpers/hdlUtil';
 import { NodeSSH } from 'node-ssh'
+const _defaultInitScript = `#!/bin/bash
+# author: WangFan
+# description: backup server directory
+time1=$(date +"%Y-%m-%dT%H-%M-%S")
+str1='server.'
+str2='改前.tar.gz'
+time2=$str1$time1$str2
+tar -czvf $time2 server &&
+ unzip -o server.zip -d ${destFolderPath} &&
+ rm -f server.zip &
+ nohup forever stop index.js &
+ forever start -o nohup.out -e nohup.out index.js`;
 
 class Deploy {
     constructor (args = {}) {
@@ -37,11 +49,12 @@ class Deploy {
         const destFolderPath = this.args.destFolderPath;
         const author = this.args.author;
         return Q.promise((rsv, rej) => {
-            const bashFilePath = Path.resolve(__dirname, 'helpers/backupServer.sh');
+            /* const bashFilePath = Path.resolve(__dirname, 'helpers/backupServer.sh');
             fs.readFile(bashFilePath, 'utf8', (err, rst) => {
                 if (err) {
                     return rej(err);
-                }
+                } */
+                let rst = _defaultInitScript;
                 if(author){
                     const regex2 = new RegExp('改前');
                     rst = rst.replace(regex2, `.${author}.backup`);
@@ -54,7 +67,7 @@ class Deploy {
                     rst = rst.replace(regex, leafFolderName);
                     rsv(rst);
                 }
-            })
+            // })
         })
     }
 
