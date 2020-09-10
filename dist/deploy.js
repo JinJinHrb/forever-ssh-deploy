@@ -28,7 +28,7 @@ function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (O
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { (0, _defineProperty2["default"])(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
-var _defaultInitScript = ['#!/bin/bash', '# author: WangFan', '# description: backup server directory', 'time1=$(date +"%Y-%m-%dT%H-%M-%S")', 'str1=\'server.\'', 'str2=\'改前.tar.gz\'', 'time2=$str1$time1$str2', 'tar -czvf $time2 server &&', 'unzip -o server.zip -d ${destFolderPath} &&', 'sleep 5 &&', 'rm -f server.zip &', 'nohup forever stop index.js &', 'forever start -o nohup.out -e nohup.out index.js'].join('\n');
+var _defaultInitScript = ['#!/bin/bash', '# author: WangFan', '# description: backup server directory', 'time1=$(date +"%Y-%m-%dT%H-%M-%S")', 'str1=\'server.\'', 'str2=\'改前.tar.gz\'', 'time2=$str1$time1$str2', 'tar -czvf $time2 server &&', 'unzip -o server.zip -d ${destFolderPath} &&', 'sleep 2 &&', 'rm -f server.zip &', 'nohup forever stop index.js &', 'forever start -o nohup.out -e nohup.out index.js'].join('\n');
 
 var Deploy = /*#__PURE__*/function () {
   function Deploy() {
