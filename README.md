@@ -12,7 +12,7 @@ npm install forever-ssh-deploy
 
 1. zip the source folder [srcFolderPath]
     
-    * if you set field "modifiedHours" with number, only files modofiied within limit hours are to be included
+    * if you set field "modifiedHours" with number, only files modified within limit hours are to be included
 
 2. upload the zip file onto the server via SFTP (authentication by either private key or password)
 
