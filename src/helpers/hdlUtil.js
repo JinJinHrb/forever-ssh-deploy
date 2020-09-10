@@ -2,7 +2,6 @@
  * Created by WangFan on 14/11/10.
  */
 import Q from 'q';
-import xss from 'xss';
 import _L from 'lodash';
 import CircularJSON from 'circular-json';
 import hdlValidateUtil from './hdlValidateUtil';
@@ -1744,18 +1743,6 @@ var getChnCharLength = function(str){
 
 };
 module.exports.getChnCharLength = getChnCharLength;
-
-module.exports.filterXss = function(content, options){
-    if(!options){
-        options = {
-            whiteList: {'font': ['color', 'class', 'style'],'a': [], 'img': ['src', 'class', 'style'], 'br': [], 'strong': [], 'b' :[], 'code' :[], 'pre' :[], 'p' :[], 'div' :[], 'em' :[], 'span' :['style', 'class'], 'h1' :[], 'h2' :[], 'h3' :[], 'h4' :[], 'h5' :[], 'h6' :[], 'table' :[], 'ul' :[], 'ol' :[], 'tr' :[], 'th' :[], 'td' :[], 'hr' :[], 'li' :[], 'u': []} ,  // 白名单为空，表示过滤所有标签
-            stripIgnoreTag: true,  // 过滤所有非白名单标签的HTML
-            stripIgnoreTagBody: ['script']  // script标签较特殊，需要过滤标签中间的内容
-        };
-    }
-    content = xss(_L.trim(content), options);
-    return content;
-};
 
 module.exports.stripHtmlTags = function(str){
     if(oType(str) !== 'string'){
