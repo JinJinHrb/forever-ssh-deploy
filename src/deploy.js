@@ -5,6 +5,7 @@ import Q from 'q';
 import zipFolder from 'zip-folder';
 import _L from 'lodash';
 import hdlUtil from './helpers/hdlUtil';
+import fsUtil from './helpers/fsUtil';
 import { NodeSSH } from 'node-ssh'
 
 const _defaultInitScript = [
@@ -27,7 +28,7 @@ class Deploy {
     constructor (args = {}) {
         const mandatoryFields = ['author', 'srcFolderPath', 'destFolderPath', 'host', 'username'];
         const mandatoryOneFields = ['privateKeyPath', 'password']
-        // const optionalFields = ['initScript'];
+        // const optionalFields = ['initScript', modifiedHours];
         for(let fd of mandatoryFields){
             if(!hdlUtil.getDeepVal(args, fd)){
                 throw new Error(`mandatory field "${fd}" is missing`);
@@ -116,7 +117,8 @@ class Deploy {
     }
 
     exec () {
-        const { srcFolderPath, destFolderPath, privateKeyPath, host, port = 22, username, password } = this.args;
+        const { srcFolderPath, modifiedHours, destFolderPath, privateKeyPath, host, port = 22, username, password } = this.args;
+        let tmpFolderPath; // if modifiedHours, copy selected files to ${tmpFolderPath} first
         let lastSlashIdx = srcFolderPath.lastIndexOf(Path.sep);
         if (lastSlashIdx === srcFolderPath.length - 1) {
             lastSlashIdx = srcFolderPath.slice(0, -1).lastIndexOf(Path.sep);
@@ -154,7 +156,19 @@ class Deploy {
                     return Q.resolve(null);
                 }
             })().then(() => {
-                return this.zipFolderHandler(srcFolderPath, { zipPath });
+                if(hdlUtil.oType(modifiedHours) === 'number'){
+                    return fsUtil.copyFilteredFilesPromise(srcFolderPath, modifiedHours);
+                }else{
+                    return;
+                }
+            }).then(feed => {
+                let thePath;
+                if(feed){
+                    thePath = tmpFolderPath = feed;
+                }else{
+                    thePath = srcFolderPath;
+                }
+                return this.zipFolderHandler(thePath, { zipPath });
             }).then(() => {
                 if(!privateKeyPath || !fs.existsSync(privateKeyPath)){
                     if(password){
@@ -245,6 +259,21 @@ class Deploy {
                 setTimeout(function(){deferred.resolve()}, 10000);
                 return deferred.promise;
             }) */.then(() => {
+                if(!tmpFolderPath){
+                    return;
+                }
+                return Q.promise((rsv, rej) => {
+                    // delete directory recursively
+                    fs.rmdir(tmpFolderPath, { recursive: true }, (err) => {
+                        if (err) {
+                            rej(err);
+                        }else{
+                            console.log(`#268 ${tmpFolderPath} is deleted!`);
+                            rsv(null);
+                        }
+                    });
+                })
+            }).then(() => {
                 _this.ssh.dispose();
                 rsvRoot({code: 111, msg: 'OK'});
             }).done(null, err => {

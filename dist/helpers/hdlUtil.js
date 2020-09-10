@@ -6,8 +6,6 @@ var _typeof2 = _interopRequireDefault(require("@babel/runtime/helpers/typeof"));
 
 var _q = _interopRequireDefault(require("q"));
 
-var _xss = _interopRequireDefault(require("xss"));
-
 var _lodash = _interopRequireDefault(require("lodash"));
 
 var _circularJson = _interopRequireDefault(require("circular-json"));
@@ -2233,50 +2231,6 @@ var getChnCharLength = function getChnCharLength(str) {
 };
 
 module.exports.getChnCharLength = getChnCharLength;
-
-module.exports.filterXss = function (content, options) {
-  if (!options) {
-    options = {
-      whiteList: {
-        'font': ['color', 'class', 'style'],
-        'a': [],
-        'img': ['src', 'class', 'style'],
-        'br': [],
-        'strong': [],
-        'b': [],
-        'code': [],
-        'pre': [],
-        'p': [],
-        'div': [],
-        'em': [],
-        'span': ['style', 'class'],
-        'h1': [],
-        'h2': [],
-        'h3': [],
-        'h4': [],
-        'h5': [],
-        'h6': [],
-        'table': [],
-        'ul': [],
-        'ol': [],
-        'tr': [],
-        'th': [],
-        'td': [],
-        'hr': [],
-        'li': [],
-        'u': []
-      },
-      // 白名单为空，表示过滤所有标签
-      stripIgnoreTag: true,
-      // 过滤所有非白名单标签的HTML
-      stripIgnoreTagBody: ['script'] // script标签较特殊，需要过滤标签中间的内容
-
-    };
-  }
-
-  content = (0, _xss["default"])(_lodash["default"].trim(content), options);
-  return content;
-};
 
 module.exports.stripHtmlTags = function (str) {
   if (oType(str) !== 'string') {

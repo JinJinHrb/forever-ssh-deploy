@@ -2,6 +2,7 @@ const Deploy = require('forever-ssh-deploy');
 
 const author = 'your name';
 const srcFolderPath = 'the path for the local project sub folder which is to replace the remote counterpart';
+const modifiedHours = 24;
 const deployConfigs = [
     {
         destFolderPath: 'remote project sub folder which is to be replaced by the local counterpart',
@@ -23,6 +24,7 @@ const deployers = deployConfigs.filter(a => a).map(a => {
     const aCopy = { ...a };
     aCopy.author = author;
     aCopy.srcFolderPath = srcFolderPath;
+    aCopy.modifiedHours = modifiedHours; // only upload files modified within limit hours
     return new Deploy(aCopy);
 })
 const recur = () => {

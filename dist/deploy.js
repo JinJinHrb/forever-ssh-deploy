@@ -20,6 +20,8 @@ var _lodash = _interopRequireDefault(require("lodash"));
 
 var _hdlUtil = _interopRequireDefault(require("./helpers/hdlUtil"));
 
+var _fsUtil = _interopRequireDefault(require("./helpers/fsUtil"));
+
 var _nodeSsh = require("node-ssh");
 
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
@@ -33,7 +35,7 @@ var Deploy = /*#__PURE__*/function () {
     var args = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
     (0, _classCallCheck2["default"])(this, Deploy);
     var mandatoryFields = ['author', 'srcFolderPath', 'destFolderPath', 'host', 'username'];
-    var mandatoryOneFields = ['privateKeyPath', 'password']; // const optionalFields = ['initScript'];
+    var mandatoryOneFields = ['privateKeyPath', 'password']; // const optionalFields = ['initScript', modifiedHours];
 
     for (var _i = 0, _mandatoryFields = mandatoryFields; _i < _mandatoryFields.length; _i++) {
       var fd = _mandatoryFields[_i];
@@ -159,6 +161,7 @@ var Deploy = /*#__PURE__*/function () {
 
       var _this$args = this.args,
           srcFolderPath = _this$args.srcFolderPath,
+          modifiedHours = _this$args.modifiedHours,
           destFolderPath = _this$args.destFolderPath,
           privateKeyPath = _this$args.privateKeyPath,
           host = _this$args.host,
@@ -166,6 +169,8 @@ var Deploy = /*#__PURE__*/function () {
           port = _this$args$port === void 0 ? 22 : _this$args$port,
           username = _this$args.username,
           password = _this$args.password;
+      var tmpFolderPath; // if modifiedHours, copy selected files to ${tmpFolderPath} first
+
       var lastSlashIdx = srcFolderPath.lastIndexOf(_path["default"].sep);
 
       if (lastSlashIdx === srcFolderPath.length - 1) {
@@ -213,7 +218,21 @@ var Deploy = /*#__PURE__*/function () {
             return _q["default"].resolve(null);
           }
         })().then(function () {
-          return _this2.zipFolderHandler(srcFolderPath, {
+          if (_hdlUtil["default"].oType(modifiedHours) === 'number') {
+            return _fsUtil["default"].copyFilteredFilesPromise(srcFolderPath, modifiedHours);
+          } else {
+            return;
+          }
+        }).then(function (feed) {
+          var thePath;
+
+          if (feed) {
+            thePath = tmpFolderPath = feed;
+          } else {
+            thePath = srcFolderPath;
+          }
+
+          return _this2.zipFolderHandler(thePath, {
             zipPath: zipPath
           });
         }).then(function () {
@@ -333,6 +352,24 @@ var Deploy = /*#__PURE__*/function () {
           return deferred.promise;
         }) */
         .then(function () {
+          if (!tmpFolderPath) {
+            return;
+          }
+
+          return _q["default"].promise(function (rsv, rej) {
+            // delete directory recursively
+            _fs["default"].rmdir(tmpFolderPath, {
+              recursive: true
+            }, function (err) {
+              if (err) {
+                rej(err);
+              } else {
+                console.log("#268 ".concat(tmpFolderPath, " is deleted!"));
+                rsv(null);
+              }
+            });
+          });
+        }).then(function () {
           _this.ssh.dispose();
 
           rsvRoot({

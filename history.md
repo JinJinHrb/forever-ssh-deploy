@@ -1,3 +1,7 @@
+# v0.1.8 - 2020-09-10
+
+* only upload files modified within limit hours
+
 # v0.1.5 - 2020/09/08
 
 * support windows paths
