@@ -20,18 +20,5 @@ const deployConfigs = [
     }
 ]
 
-const deployers = deployConfigs.filter(a => a).map(a => {
-    const aCopy = { ...a };
-    aCopy.author = author;
-    aCopy.srcFolderPath = srcFolderPath;
-    aCopy.modifiedHours = modifiedHours; // only upload files modified within limit hours
-    return new Deploy(aCopy);
-})
-const recur = () => {
-    if(deployers.length < 1){
-        return;
-    }
-    const task = deployers.shift();
-    task.exec().then(recur);
-}
-recur();
+const deploy = new Deploy({author, srcFolderPath, modifiedHours, servers: deployConfigs});
+deploy.exec();

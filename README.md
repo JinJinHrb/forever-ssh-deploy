@@ -16,11 +16,13 @@ npm install forever-ssh-deploy
 
 2. upload the zip file onto the server via SFTP (authentication by either private key or password)
 
+    * you can set different servers at one time
+
 3. unzip and execute bash script to restart the project
     
     * the default script uses [forever](https://github.com/foreversd/forever) to start "index.js" located at the parent folder of the remote folder [destFolderPath]
 
-    * you can override the bash script via field "initScript" in constructor arguments for Deploy
+    * you can override the bash script via field "initScript" in the constructor argument for class Deploy
 
 ## Example Usage
 
@@ -51,21 +53,8 @@ const deployConfigs = [
     }
 ]
 
-const deployers = deployConfigs.filter(a => a).map(a => {
-    const aCopy = { ...a };
-    aCopy.author = author;
-    aCopy.srcFolderPath = srcFolderPath;
-    aCopy.modifiedHours = modifiedHours; // only upload files modified within limit hours
-    return new Deploy(aCopy);
-})
-const recur = () => {
-    if(deployers.length < 1){
-        return;
-    }
-    const task = deployers.shift();
-    task.exec().then(recur);
-}
-recur();
+const deploy = new Deploy({author, srcFolderPath, modifiedHours, servers: deployConfigs});
+deploy.exec();
 ```
 
 ## Default Init Script

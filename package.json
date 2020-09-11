@@ -1,6 +1,6 @@
 {
   "name": "forever-ssh-deploy",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "deployement tool via SFTP",
   "main": "dist/deploy.js",
   "scripts": {
