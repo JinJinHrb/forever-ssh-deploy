@@ -104,3 +104,4 @@ typings/
 .tern-port
 examples/deployServerPass.js
 examples/deployServerPrivKey.js
+examples/deployServerPrivKeyDev.js
