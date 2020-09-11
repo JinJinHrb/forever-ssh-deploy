@@ -26,15 +26,15 @@ const _defaultInitScript = [
 
 class Deploy {
     constructor (args = {}) {
-        const mandatoryFields = ['author', 'srcFolderPath', 'destFolderPath', 'host', 'username'];
-        const mandatoryOneFields = ['privateKeyPath', 'password']
+        const mandatoryFields = ['author', 'srcFolderPath']; // 'destFolderPath', 'host', 'username'
+        // const mandatoryOneFields = ['privateKeyPath', 'password']
         // const optionalFields = ['initScript', modifiedHours];
         for(let fd of mandatoryFields){
             if(!hdlUtil.getDeepVal(args, fd)){
                 throw new Error(`mandatory field "${fd}" is missing`);
             }
         }
-        let isMandatoryOneOk = false; // 二选一
+        /* let isMandatoryOneOk = false; // 二选一
         for(let fd of mandatoryOneFields){
             if(hdlUtil.getDeepVal(args, fd)){
                 isMandatoryOneOk = true;
@@ -43,15 +43,15 @@ class Deploy {
         }
         if(!isMandatoryOneOk){
             throw new Error(`mandatory field "privateKeyPath / password" is missing`);
-        }
+        } */
         this.args = args;
     }
 
-    getInitScriptPromise (leafFolderName) {
+    getInitScriptPromise ({leafFolderName, destFolderPath}) {
         if ( this.args.initScript ) {
             return Q.resolve(this.args.initScript);
         }
-        const destFolderPath = this.args.destFolderPath;
+        // const destFolderPath = this.args.destFolderPath;
         const author = this.args.author;
         return Q.promise((rsv, rej) => {
             /* const bashFilePath = Path.resolve(__dirname, 'helpers/backupServer.sh');
@@ -90,6 +90,21 @@ class Deploy {
             });
         })
     }
+
+    removeFolderPromise (folerPath) {
+        return Q.promise((rsv, rej) => {
+            // delete directory recursively
+            fs.rmdir(folerPath, { recursive: true }, (err) => {
+                if (err) {
+                    console.error(`fail to delete ${folerPath}, ERROR:`, err);
+                    rej(err);
+                }else{
+                    console.log(hdlUtil.date2string(new Date(), 'ms'), `#268 ${folerPath} is deleted!`);
+                    rsv(null);
+                }
+            });
+        })
+    }
     
     /** 
      * @param {String} folderPath the path of folder to be zipped
@@ -117,7 +132,36 @@ class Deploy {
     }
 
     exec () {
-        const { srcFolderPath, modifiedHours, destFolderPath, privateKeyPath, host, port = 22, username, password } = this.args;
+        const { srcFolderPath, modifiedHours } = this.args;
+        let servers = this.args.servers;
+        if(!servers){
+            const {destFolderPath, privateKeyPath, host, port, username, password} = this.args;
+            servers = [{destFolderPath, privateKeyPath, host, port, username, password}];
+        }
+        const _this = this;
+        const recur = (feed = {}) => {
+            const {tmpFolderPath, localBashFilePath, zipPath} = feed;
+            if(servers.length < 1){
+                const qAll = [];
+                qAll.push( this.removeFilePromise(zipPath) );
+                qAll.push( this.removeFilePromise(localBashFilePath) );
+                qAll.push( this.removeFolderPromise(tmpFolderPath) );
+                return;
+            }
+            const task = Object.assign({}, servers.shift(), {srcFolderPath, modifiedHours});
+            if(zipPath){
+                task.preparedZipPath = zipPath;
+                task.preparedTmpFolderPath = tmpFolderPath;
+            }
+            _this.exec2(task).then(recur);
+        }
+        recur();
+    }
+
+    exec2 (params = {}) {
+        const { srcFolderPath, modifiedHours, destFolderPath, privateKeyPath, host, port = 22, username, password } = params;
+        const preparedZipPath = params.preparedZipPath; // 同一批部署，不重复制作压缩包
+        const preparedTmpFolderPath = params.preparedTmpFolderPath; // 同一批部署，不重复制作压缩包
         let tmpFolderPath; // if modifiedHours, copy selected files to ${tmpFolderPath} first
         let lastSlashIdx = srcFolderPath.lastIndexOf(Path.sep);
         if (lastSlashIdx === srcFolderPath.length - 1) {
@@ -147,16 +191,20 @@ class Deploy {
         const destFilePath = `${parentDestFolderPath}${destPathSep}${zipFileName}`; // Path.resolve(parentDestFolderPath, zipFileName);
         const localBashFilePath = Path.resolve(__dirname, '.backupServer.sh');
         const _this = this;
+        let toPrint;
         return Q.promise((rsvRoot, rejRoot) => {
             (() => {
                 // eslint-disable-next-line no-sync
-                if(fs.existsSync(zipPath)){
+                if(fs.existsSync(zipPath) && !preparedZipPath){ // 不删除同一批任务留下的压缩包
                     return this.removeFilePromise (zipPath);
                 }else{
                     return Q.resolve(null);
                 }
             })().then(() => {
                 if(hdlUtil.oType(modifiedHours) === 'number'){
+                    if(preparedZipPath && fs.existsSync(zipPath)){ // 不重复制作压缩包
+                        return preparedTmpFolderPath;
+                    }
                     return fsUtil.copyFilteredFilesPromise(srcFolderPath, modifiedHours);
                 }else{
                     return;
@@ -167,6 +215,9 @@ class Deploy {
                     thePath = tmpFolderPath = feed;
                 }else{
                     thePath = srcFolderPath;
+                }
+                if(fs.existsSync(zipPath) && preparedZipPath){ // 不重复制作压缩包
+                    return;
                 }
                 return this.zipFolderHandler(thePath, { zipPath });
             }).then(() => {
@@ -199,8 +250,12 @@ class Deploy {
                 }
                 const sshOptionsCopy = { ...sshOptions };
                 delete sshOptionsCopy.privateKey;
+                toPrint = {host, port, username}
                 return _this.ssh.connect(sshOptions);
             }).then(() => {
+                if(toPrint){
+                    console.log(hdlUtil.date2string(new Date(), 'ms'), 'SSH Login:', toPrint);
+                }
                 return Q.promise((rsv, rej) => {
                     _this.ssh.putFile(zipPath, destFilePath).then(function () {
                         rsv({ destFilePath, msg: 'OK', zipPath });
@@ -225,7 +280,7 @@ class Deploy {
                     })
                 }) */
             }).then(() => {
-                return this.getInitScriptPromise(leafFolderName);
+                return this.getInitScriptPromise({leafFolderName, destFolderPath});
             }).then(feed => {
                 return Q.promise((rsv, rej) => {
                     fs.writeFile(localBashFilePath, feed, { encoding: 'utf8', mode: 0o644, flag: 'w' }, (err, rst) => {
@@ -249,16 +304,16 @@ class Deploy {
                 return _this.ssh.execCommand('chmod +x backupServer.sh', { cwd: parentDestFolderPath })
             }).then(() => {
                 return _this.ssh.execCommand('./backupServer.sh', { cwd: parentDestFolderPath });
-            }).then(() => {
+            })/* .then(() => {
                 const qAll = [];
                 qAll.push( this.removeFilePromise(zipPath) );
                 qAll.push( this.removeFilePromise(localBashFilePath) );
                 return Q.all(qAll);
-            })/* .then(() => {
+            }) *//* .then(() => {
                 const deferred = Q.defer();
                 setTimeout(function(){deferred.resolve()}, 10000);
                 return deferred.promise;
-            }) */.then(() => {
+            }) *//* .then(() => {
                 if(!tmpFolderPath){
                     return;
                 }
@@ -273,9 +328,9 @@ class Deploy {
                         }
                     });
                 })
-            }).then(() => {
+            }) */.then(() => {
                 _this.ssh.dispose();
-                rsvRoot({code: 111, msg: 'OK'});
+                rsvRoot({code: 111, msg: 'OK', tmpFolderPath, localBashFilePath, zipPath});
             }).done(null, err => {
                 if (!err) {
                     return;

@@ -34,8 +34,9 @@ var Deploy = /*#__PURE__*/function () {
   function Deploy() {
     var args = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
     (0, _classCallCheck2["default"])(this, Deploy);
-    var mandatoryFields = ['author', 'srcFolderPath', 'destFolderPath', 'host', 'username'];
-    var mandatoryOneFields = ['privateKeyPath', 'password']; // const optionalFields = ['initScript', modifiedHours];
+    var mandatoryFields = ['author', 'srcFolderPath']; // 'destFolderPath', 'host', 'username'
+    // const mandatoryOneFields = ['privateKeyPath', 'password']
+    // const optionalFields = ['initScript', modifiedHours];
 
     for (var _i = 0, _mandatoryFields = mandatoryFields; _i < _mandatoryFields.length; _i++) {
       var fd = _mandatoryFields[_i];
@@ -44,33 +45,32 @@ var Deploy = /*#__PURE__*/function () {
         throw new Error("mandatory field \"".concat(fd, "\" is missing"));
       }
     }
-
-    var isMandatoryOneOk = false; // 二选一
-
-    for (var _i2 = 0, _mandatoryOneFields = mandatoryOneFields; _i2 < _mandatoryOneFields.length; _i2++) {
-      var _fd = _mandatoryOneFields[_i2];
-
-      if (_hdlUtil["default"].getDeepVal(args, _fd)) {
-        isMandatoryOneOk = true;
-        break;
-      }
+    /* let isMandatoryOneOk = false; // 二选一
+    for(let fd of mandatoryOneFields){
+        if(hdlUtil.getDeepVal(args, fd)){
+            isMandatoryOneOk = true;
+            break;
+        }
     }
+    if(!isMandatoryOneOk){
+        throw new Error(`mandatory field "privateKeyPath / password" is missing`);
+    } */
 
-    if (!isMandatoryOneOk) {
-      throw new Error("mandatory field \"privateKeyPath / password\" is missing");
-    }
 
     this.args = args;
   }
 
   (0, _createClass2["default"])(Deploy, [{
     key: "getInitScriptPromise",
-    value: function getInitScriptPromise(leafFolderName) {
+    value: function getInitScriptPromise(_ref) {
+      var leafFolderName = _ref.leafFolderName,
+          destFolderPath = _ref.destFolderPath;
+
       if (this.args.initScript) {
         return _q["default"].resolve(this.args.initScript);
-      }
+      } // const destFolderPath = this.args.destFolderPath;
 
-      var destFolderPath = this.args.destFolderPath;
+
       var author = this.args.author;
       return _q["default"].promise(function (rsv, rej) {
         /* const bashFilePath = Path.resolve(__dirname, 'helpers/backupServer.sh');
@@ -114,6 +114,24 @@ var Deploy = /*#__PURE__*/function () {
           }
 
           rsv(filePath);
+        });
+      });
+    }
+  }, {
+    key: "removeFolderPromise",
+    value: function removeFolderPromise(folerPath) {
+      return _q["default"].promise(function (rsv, rej) {
+        // delete directory recursively
+        _fs["default"].rmdir(folerPath, {
+          recursive: true
+        }, function (err) {
+          if (err) {
+            console.error("fail to delete ".concat(folerPath, ", ERROR:"), err);
+            rej(err);
+          } else {
+            console.log(_hdlUtil["default"].date2string(new Date(), 'ms'), "#268 ".concat(folerPath, " is deleted!"));
+            rsv(null);
+          }
         });
       });
     }
@@ -161,14 +179,77 @@ var Deploy = /*#__PURE__*/function () {
 
       var _this$args = this.args,
           srcFolderPath = _this$args.srcFolderPath,
-          modifiedHours = _this$args.modifiedHours,
-          destFolderPath = _this$args.destFolderPath,
-          privateKeyPath = _this$args.privateKeyPath,
-          host = _this$args.host,
-          _this$args$port = _this$args.port,
-          port = _this$args$port === void 0 ? 22 : _this$args$port,
-          username = _this$args.username,
-          password = _this$args.password;
+          modifiedHours = _this$args.modifiedHours;
+      var servers = this.args.servers;
+
+      if (!servers) {
+        var _this$args2 = this.args,
+            destFolderPath = _this$args2.destFolderPath,
+            privateKeyPath = _this$args2.privateKeyPath,
+            host = _this$args2.host,
+            port = _this$args2.port,
+            username = _this$args2.username,
+            password = _this$args2.password;
+        servers = [{
+          destFolderPath: destFolderPath,
+          privateKeyPath: privateKeyPath,
+          host: host,
+          port: port,
+          username: username,
+          password: password
+        }];
+      }
+
+      var _this = this;
+
+      var recur = function recur() {
+        var feed = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+        var tmpFolderPath = feed.tmpFolderPath,
+            localBashFilePath = feed.localBashFilePath,
+            zipPath = feed.zipPath;
+
+        if (servers.length < 1) {
+          var qAll = [];
+          qAll.push(_this2.removeFilePromise(zipPath));
+          qAll.push(_this2.removeFilePromise(localBashFilePath));
+          qAll.push(_this2.removeFolderPromise(tmpFolderPath));
+          return;
+        }
+
+        var task = Object.assign({}, servers.shift(), {
+          srcFolderPath: srcFolderPath,
+          modifiedHours: modifiedHours
+        });
+
+        if (zipPath) {
+          task.preparedZipPath = zipPath;
+          task.preparedTmpFolderPath = tmpFolderPath;
+        }
+
+        _this.exec2(task).then(recur);
+      };
+
+      recur();
+    }
+  }, {
+    key: "exec2",
+    value: function exec2() {
+      var _this3 = this;
+
+      var params = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+      var srcFolderPath = params.srcFolderPath,
+          modifiedHours = params.modifiedHours,
+          destFolderPath = params.destFolderPath,
+          privateKeyPath = params.privateKeyPath,
+          host = params.host,
+          _params$port = params.port,
+          port = _params$port === void 0 ? 22 : _params$port,
+          username = params.username,
+          password = params.password;
+      var preparedZipPath = params.preparedZipPath; // 同一批部署，不重复制作压缩包
+
+      var preparedTmpFolderPath = params.preparedTmpFolderPath; // 同一批部署，不重复制作压缩包
+
       var tmpFolderPath; // if modifiedHours, copy selected files to ${tmpFolderPath} first
 
       var lastSlashIdx = srcFolderPath.lastIndexOf(_path["default"].sep);
@@ -209,16 +290,23 @@ var Deploy = /*#__PURE__*/function () {
 
       var _this = this;
 
+      var toPrint;
       return _q["default"].promise(function (rsvRoot, rejRoot) {
         (function () {
           // eslint-disable-next-line no-sync
-          if (_fs["default"].existsSync(zipPath)) {
-            return _this2.removeFilePromise(zipPath);
+          if (_fs["default"].existsSync(zipPath) && !preparedZipPath) {
+            // 不删除同一批任务留下的压缩包
+            return _this3.removeFilePromise(zipPath);
           } else {
             return _q["default"].resolve(null);
           }
         })().then(function () {
           if (_hdlUtil["default"].oType(modifiedHours) === 'number') {
+            if (preparedZipPath && _fs["default"].existsSync(zipPath)) {
+              // 不重复制作压缩包
+              return preparedTmpFolderPath;
+            }
+
             return _fsUtil["default"].copyFilteredFilesPromise(srcFolderPath, modifiedHours);
           } else {
             return;
@@ -232,7 +320,12 @@ var Deploy = /*#__PURE__*/function () {
             thePath = srcFolderPath;
           }
 
-          return _this2.zipFolderHandler(thePath, {
+          if (_fs["default"].existsSync(zipPath) && preparedZipPath) {
+            // 不重复制作压缩包
+            return;
+          }
+
+          return _this3.zipFolderHandler(thePath, {
             zipPath: zipPath
           });
         }).then(function () {
@@ -273,8 +366,17 @@ var Deploy = /*#__PURE__*/function () {
           var sshOptionsCopy = _objectSpread({}, sshOptions);
 
           delete sshOptionsCopy.privateKey;
+          toPrint = {
+            host: host,
+            port: port,
+            username: username
+          };
           return _this.ssh.connect(sshOptions);
         }).then(function () {
+          if (toPrint) {
+            console.log(_hdlUtil["default"].date2string(new Date(), 'ms'), 'SSH Login:', toPrint);
+          }
+
           return _q["default"].promise(function (rsv, rej) {
             _this.ssh.putFile(zipPath, destFilePath).then(function () {
               rsv({
@@ -303,7 +405,10 @@ var Deploy = /*#__PURE__*/function () {
                   })
               }) */
         }).then(function () {
-          return _this2.getInitScriptPromise(leafFolderName);
+          return _this3.getInitScriptPromise({
+            leafFolderName: leafFolderName,
+            destFolderPath: destFolderPath
+          });
         }).then(function (feed) {
           return _q["default"].promise(function (rsv, rej) {
             _fs["default"].writeFile(localBashFilePath, feed, {
@@ -340,41 +445,45 @@ var Deploy = /*#__PURE__*/function () {
           return _this.ssh.execCommand('./backupServer.sh', {
             cwd: parentDestFolderPath
           });
-        }).then(function () {
-          var qAll = [];
-          qAll.push(_this2.removeFilePromise(zipPath));
-          qAll.push(_this2.removeFilePromise(localBashFilePath));
-          return _q["default"].all(qAll);
         })
         /* .then(() => {
-          const deferred = Q.defer();
-          setTimeout(function(){deferred.resolve()}, 10000);
-          return deferred.promise;
+          const qAll = [];
+          qAll.push( this.removeFilePromise(zipPath) );
+          qAll.push( this.removeFilePromise(localBashFilePath) );
+          return Q.all(qAll);
+        }) */
+
+        /* .then(() => {
+        const deferred = Q.defer();
+        setTimeout(function(){deferred.resolve()}, 10000);
+        return deferred.promise;
+        }) */
+
+        /* .then(() => {
+        if(!tmpFolderPath){
+           return;
+        }
+        return Q.promise((rsv, rej) => {
+           // delete directory recursively
+           fs.rmdir(tmpFolderPath, { recursive: true }, (err) => {
+               if (err) {
+                   rej(err);
+               }else{
+                   console.log(`#268 ${tmpFolderPath} is deleted!`);
+                   rsv(null);
+               }
+           });
+        })
         }) */
         .then(function () {
-          if (!tmpFolderPath) {
-            return;
-          }
-
-          return _q["default"].promise(function (rsv, rej) {
-            // delete directory recursively
-            _fs["default"].rmdir(tmpFolderPath, {
-              recursive: true
-            }, function (err) {
-              if (err) {
-                rej(err);
-              } else {
-                console.log("#268 ".concat(tmpFolderPath, " is deleted!"));
-                rsv(null);
-              }
-            });
-          });
-        }).then(function () {
           _this.ssh.dispose();
 
           rsvRoot({
             code: 111,
-            msg: 'OK'
+            msg: 'OK',
+            tmpFolderPath: tmpFolderPath,
+            localBashFilePath: localBashFilePath,
+            zipPath: zipPath
           });
         }).done(null, function (err) {
           if (!err) {
