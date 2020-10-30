@@ -4,17 +4,21 @@ var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefau
 
 var _typeof2 = _interopRequireDefault(require("@babel/runtime/helpers/typeof"));
 
-var _q = _interopRequireDefault(require("q"));
-
-var _lodash = _interopRequireDefault(require("lodash"));
-
-var _circularJson = _interopRequireDefault(require("circular-json"));
-
-var _hdlValidateUtil = _interopRequireDefault(require("./hdlValidateUtil"));
-
 /**
  * Created by WangFan on 14/11/10.
  */
+// import Q from 'q';
+// import _L from 'lodash';
+// import CircularJSON from 'circular-json';
+// import hdlValidateUtil from './hdlValidateUtil';
+var Q = require('q');
+
+var _L = require('lodash');
+
+var CircularJSON = require('circular-json');
+
+var hdlValidateUtil = require('./hdlValidateUtil');
+
 var xConstUtil = {
   datesDesc: {
     en: {
@@ -358,7 +362,7 @@ var parseDatetimeStrByFlag = function parseDatetimeStrByFlag(str) {
     };
   }
 
-  var flag = _lodash["default"].trim(options.flag);
+  var flag = _L.trim(options.flag);
 
   if (!str) {
     return null;
@@ -389,7 +393,7 @@ var parseDatetimeStrByFlag = function parseDatetimeStrByFlag(str) {
     flag = getDatetimeFlag(str);
   }
 
-  var addOneDayIfNoTime = _lodash["default"].trim(options.addOneDayIfNoTime);
+  var addOneDayIfNoTime = _L.trim(options.addOneDayIfNoTime);
 
   switch (flag) {
     // equivalent to function: parse_yyyymmdd(str)
@@ -683,12 +687,12 @@ var date2string = function date2string(date, precise) {
     var tmpArr1 = [];
     var tmpArr2 = [];
     tmpArr1.push(utcYear);
-    tmpArr1.push(_lodash["default"].padStart(utcMonth, 2, '0'));
-    tmpArr1.push(_lodash["default"].padStart(utcDate, 2, '0'));
-    tmpArr2.push(_lodash["default"].padStart(utcHour, 2, '0'));
-    tmpArr2.push(_lodash["default"].padStart(utcMinute, 2, '0'));
-    tmpArr2.push(_lodash["default"].padStart(utcSecond, 2, '0'));
-    var rtnStr = tmpArr1.join('-') + 'T' + tmpArr2.join(':') + '.' + _lodash["default"].padStart(utcMillisecond, 3, '0') + 'Z';
+    tmpArr1.push(_L.padStart(utcMonth, 2, '0'));
+    tmpArr1.push(_L.padStart(utcDate, 2, '0'));
+    tmpArr2.push(_L.padStart(utcHour, 2, '0'));
+    tmpArr2.push(_L.padStart(utcMinute, 2, '0'));
+    tmpArr2.push(_L.padStart(utcSecond, 2, '0'));
+    var rtnStr = tmpArr1.join('-') + 'T' + tmpArr2.join(':') + '.' + _L.padStart(utcMillisecond, 3, '0') + 'Z';
     return rtnStr;
   }
 
@@ -852,7 +856,7 @@ var iterateObject2replaceCertainValue = function iterateObject2replaceCertainVal
     data = rawData;
   }
 
-  var isReplace = _lodash["default"].trim(options.isReplace);
+  var isReplace = _L.trim(options.isReplace);
 
   var recurHandler = function recurHandler(elem, converter) {
     if (oType(elem) !== 'object') {
@@ -971,7 +975,7 @@ var iterateObject4DiffHandler = function itrObj4Dif(obj1, obj2, customizer) {
 
   if (!customizer || !(customizer instanceof Function)) {
     customizer = function customizer(a, b, c) {
-      if (_lodash["default"].isEqual(a, b)) {
+      if (_L.isEqual(a, b)) {
         return null;
       }
 
@@ -999,9 +1003,9 @@ var iterateObject4DiffHandler = function itrObj4Dif(obj1, obj2, customizer) {
   }
 
   return result.filter(function (a) {
-    var copyA = _lodash["default"].flattenDeep(deepClone(a));
+    var copyA = _L.flattenDeep(deepClone(a));
 
-    return !_lodash["default"].isEmpty(copyA);
+    return !_L.isEmpty(copyA);
   });
 };
 
@@ -1070,7 +1074,7 @@ module.exports.formatISOdate2 = function (str) {
   return str.split('-').map(function (a, idx) {
     if ([1, 2].indexOf(idx) > -1) {
       if (a.length < 2) {
-        return _lodash["default"].padStart(a, 2, '0');
+        return _L.padStart(a, 2, '0');
       }
     }
 
@@ -1133,7 +1137,7 @@ module.exports.getNewBritishDate = function (dd, options) {
     return '';
   }
 
-  var year = _lodash["default"].trim(date.getFullYear())
+  var year = _L.trim(date.getFullYear())
   /* .slice(2) annotated @ 2019-12-02 18:29:26 */
   ;
 
@@ -1386,7 +1390,7 @@ function displayProp(obj, limit) {
     if (obj instanceof Error) {
       str = printError(obj);
     } else if (objType === 'object') {
-      str = _circularJson["default"].stringify(obj);
+      str = CircularJSON.stringify(obj);
     } else {
       str = String(obj);
     }
@@ -1624,7 +1628,7 @@ var getMultiSubString = function getMultiSubString(array, src, from, to) {
     return;
   }
 
-  var middle = _lodash["default"].trim(src.substring(start, end));
+  var middle = _L.trim(src.substring(start, end));
 
   array.push(middle);
   end += to.length + 1;
@@ -1792,7 +1796,7 @@ module.exports.joinEscapeCustomizer = joinEscapeCustomizer;
 var splitMultiEscapeCustomizer = function splitMultiEscapeCustomizer(str, ch) {
   var arr1 = splitEscapeCustomizer(str, ch);
 
-  var arr2 = _lodash["default"].flatten(arr1.map(function (a) {
+  var arr2 = _L.flatten(arr1.map(function (a) {
     return splitEscapeCustomizer(a, ch, 2);
   })).filter(function (a) {
     return a;
@@ -2154,7 +2158,7 @@ function parseJsonWithNumber2String(str) {
     var matchArr = matches ? Array.prototype.slice.call(matches) : [];
 
     for (var i = 0; i < matchArr.length; i++) {
-      var sourceStr = _lodash["default"].trim(matchArr[i]);
+      var sourceStr = _L.trim(matchArr[i]);
 
       var targetStr = sourceStr.replace(':', ':"');
       var tgtStrlen = targetStr.length;
@@ -2200,7 +2204,7 @@ var getEngCharLength = function getEngCharLength(str) {
   var chineseStrArr = [];
   var notChineseStrArr = [];
   arr.forEach(function (singleStr) {
-    if (_hdlValidateUtil["default"].isChnChar(singleStr)) {
+    if (hdlValidateUtil.isChnChar(singleStr)) {
       chineseStrArr.push(singleStr);
     } else {
       notChineseStrArr.push(singleStr);
@@ -2221,7 +2225,7 @@ var getChnCharLength = function getChnCharLength(str) {
   var chineseStrArr = [];
   var notChineseStrArr = [];
   arr.forEach(function (singleStr) {
-    if (_hdlValidateUtil["default"].isChnChar(singleStr)) {
+    if (hdlValidateUtil.isChnChar(singleStr)) {
       chineseStrArr.push(singleStr);
     } else {
       notChineseStrArr.push(singleStr);
@@ -2287,7 +2291,7 @@ module.exports.splitDollarVarTemplate = function (template) {
         if (varIdx1 < varIdx2) {
           var varKey = template.slice(varIdx1, varIdx2);
 
-          var valVal = _lodash["default"].trim(varObj[varKey]);
+          var valVal = _L.trim(varObj[varKey]);
 
           if (valVal) {
             subArr.push(valVal);
@@ -2583,7 +2587,7 @@ var stepDownIfConditionSatisfiedPromise = function stepDownIfConditionSatisfiedP
     }
   };
 
-  return _q["default"].promise(function (rsv, rej) {
+  return Q.promise(function (rsv, rej) {
     recurHandler(rsv, rej);
   });
 };
@@ -2648,7 +2652,7 @@ var getPlaceOfBirthEng = function getPlaceOfBirthEng(birthPlace) {
     }
   }
 
-  return _lodash["default"].trim(placeOfBirthEng);
+  return _L.trim(placeOfBirthEng);
 };
 
 module.exports.getPlaceOfBirthEng = getPlaceOfBirthEng;
@@ -2702,7 +2706,7 @@ var getPlaceOfIssueEng = function getPlaceOfIssueEng(issuePlace) {
     }
   }
 
-  return _lodash["default"].trim(placeOfIssueEng);
+  return _L.trim(placeOfIssueEng);
 };
 
 module.exports.getPlaceOfIssueEng = getPlaceOfIssueEng;

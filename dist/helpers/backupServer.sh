@@ -6,8 +6,7 @@ str1='server.'
 str2='改前.tar.gz'
 time2=$str1$time1$str2
 tar -czvf $time2 server &&
- unzip -o server.zip -d ${destFolderPath} &&
- sleep 2 &&
- rm -f server.zip &
+ cp -R .server/* server/ &&
+ rm -rf .server &
  nohup forever stop index.js &
  forever start -o nohup.out -e nohup.out index.js

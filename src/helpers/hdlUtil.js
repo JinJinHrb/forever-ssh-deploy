@@ -1,10 +1,16 @@
 /**
  * Created by WangFan on 14/11/10.
  */
-import Q from 'q';
-import _L from 'lodash';
-import CircularJSON from 'circular-json';
-import hdlValidateUtil from './hdlValidateUtil';
+// import Q from 'q';
+// import _L from 'lodash';
+// import CircularJSON from 'circular-json';
+// import hdlValidateUtil from './hdlValidateUtil';
+
+const Q = require('q');
+const _L = require('lodash');
+const CircularJSON = require('circular-json');
+const hdlValidateUtil = require('./hdlValidateUtil');
+
 const xConstUtil = {
     datesDesc: {
         en: {

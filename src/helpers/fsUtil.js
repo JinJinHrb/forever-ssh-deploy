@@ -1,8 +1,15 @@
-import Q from 'q';
-import hdlUtil from './hdlUtil';
-import _L from 'lodash';
-import fs from 'fs';
-import Path from "path";
+// import Q from 'q';
+// import hdlUtil from './hdlUtil';
+// import _L from 'lodash';
+// import fs from 'fs';
+// import Path from "path";
+
+const Q = require('q');
+const hdlUtil = require('./hdlUtil');
+// const _L = require('lodash');
+const fs = require('fs');
+const Path = require('path');
+
 const {COPYFILE_EXCL} = fs.constants;
 
 const getFileSeparator = (filePath) => {

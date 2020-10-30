@@ -1,20 +1,22 @@
 "use strict";
 
-var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
-
-var _q = _interopRequireDefault(require("q"));
-
-var _hdlUtil = _interopRequireDefault(require("./hdlUtil"));
-
-var _lodash = _interopRequireDefault(require("lodash"));
-
-var _fs = _interopRequireDefault(require("fs"));
-
-var _path = _interopRequireDefault(require("path"));
-
 var _this = void 0;
 
-var COPYFILE_EXCL = _fs["default"].constants.COPYFILE_EXCL;
+// import Q from 'q';
+// import hdlUtil from './hdlUtil';
+// import _L from 'lodash';
+// import fs from 'fs';
+// import Path from "path";
+var Q = require('q');
+
+var hdlUtil = require('./hdlUtil'); // const _L = require('lodash');
+
+
+var fs = require('fs');
+
+var Path = require('path');
+
+var COPYFILE_EXCL = fs.constants.COPYFILE_EXCL;
 
 var getFileSeparator = function getFileSeparator(filePath) {
   if (!filePath) {
@@ -55,9 +57,9 @@ var mkdirSync = function mkdirSync(url, mode, cb) {
   }
 
   function inner(cur) {
-    if (cur && !_fs["default"].existsSync(cur)) {
+    if (cur && !fs.existsSync(cur)) {
       // 不存在就创建一个
-      _fs["default"].mkdirSync(cur, mode);
+      fs.mkdirSync(cur, mode);
     }
 
     if (arr.length) {
@@ -77,7 +79,7 @@ module.exports.mkdirSync = mkdirSync;
 
 var copyFilePromise = function copyFilePromise(oldPath, newPath) {
   var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
-  return _q["default"].promise(function (rsv, rej) {
+  return Q.promise(function (rsv, rej) {
     var callback = function callback(err) {
       if (err) {
         rej(err);
@@ -87,9 +89,9 @@ var copyFilePromise = function copyFilePromise(oldPath, newPath) {
     };
 
     if (options.overwrite === 'Y') {
-      _fs["default"].copyFile.call(_this, oldPath, newPath, callback);
+      fs.copyFile.call(_this, oldPath, newPath, callback);
     } else {
-      _fs["default"].copyFile.call(_this, oldPath, newPath, COPYFILE_EXCL, callback);
+      fs.copyFile.call(_this, oldPath, newPath, COPYFILE_EXCL, callback);
     }
   });
 };
@@ -97,11 +99,10 @@ var copyFilePromise = function copyFilePromise(oldPath, newPath) {
 module.exports.copyFilePromise = copyFilePromise;
 
 var listStatsPromise = function listStatsPromise(folderPath, filterHandler) {
-  return _q["default"].promise(function (rsv_root, rej_root) {
+  return Q.promise(function (rsv_root, rej_root) {
     var fileNames = [];
-
-    _q["default"].promise(function (rsv, rej) {
-      _fs["default"].readdir(folderPath, function (err, rsp) {
+    Q.promise(function (rsv, rej) {
+      fs.readdir(folderPath, function (err, rsp) {
         if (err) {
           return rej(err);
         }
@@ -111,15 +112,14 @@ var listStatsPromise = function listStatsPromise(folderPath, filterHandler) {
     }).then(function (feed) {
       if (feed.length < 1) {
         rsv_root(null);
-        return _q["default"].reject(null);
+        return Q.reject(null);
       }
 
       fileNames = feed;
       var q_all = feed.map(function (elem) {
-        return _q["default"].promise(function (rsv, rej) {
-          var filePath = folderPath + _path["default"].sep + elem;
-
-          _fs["default"].stat(filePath, function (err, rsp) {
+        return Q.promise(function (rsv, rej) {
+          var filePath = folderPath + Path.sep + elem;
+          fs.stat(filePath, function (err, rsp) {
             if (err) {
               return rej(err);
             }
@@ -128,12 +128,12 @@ var listStatsPromise = function listStatsPromise(folderPath, filterHandler) {
           });
         });
       });
-      return _q["default"].all(q_all);
+      return Q.all(q_all);
     }).then(function (feed) {
       var now = new Date();
       feed.forEach(function (elem, i) {
         if (elem.birthtime instanceof Date) {
-          elem.life = _hdlUtil["default"].getTimeGap(elem.birthtime, now);
+          elem.life = hdlUtil.getTimeGap(elem.birthtime, now);
         }
 
         elem.fname = fileNames[i];
@@ -178,12 +178,12 @@ var listFilteredFilesPromise = function listFilteredFilesPromise(_ref) {
       return a.isDirectory;
     }).then(function (feed) {
       feed.forEach(function (a) {
-        stats.nextLevel.push(_path["default"].resolve(subFolderPath, a.fname));
+        stats.nextLevel.push(Path.resolve(subFolderPath, a.fname));
       });
       return listStatsPromise(subFolderPath, filterHandler);
     }).then(function (feed) {
       feed.forEach(function (a) {
-        a.absPath = _path["default"].resolve(subFolderPath, a.fname);
+        a.absPath = Path.resolve(subFolderPath, a.fname);
         a.depth = stats.depth;
         stats.results.push(a);
       });
@@ -192,12 +192,12 @@ var listFilteredFilesPromise = function listFilteredFilesPromise(_ref) {
         var _nextFolderPath = stats.sameLevel.shift();
 
         recurHandler(rsv, rej, _nextFolderPath, filterHandler, stats);
-        return _q["default"].reject(null);
+        return Q.reject(null);
       }
 
       if (stats.nextLevel.length < 1 || !isRecur) {
         rsv(stats.results);
-        return _q["default"].reject(null);
+        return Q.reject(null);
       }
 
       stats.sameLevel = stats.nextLevel;
@@ -214,7 +214,7 @@ var listFilteredFilesPromise = function listFilteredFilesPromise(_ref) {
     });
   };
 
-  return _q["default"].promise(function (rsvRoot, rejRoot) {
+  return Q.promise(function (rsvRoot, rejRoot) {
     recurHandler(rsvRoot, rejRoot, folderPath, filterHandler);
   });
 };
@@ -227,21 +227,19 @@ module.exports.listFilteredFilesPromise = listFilteredFilesPromise;
 
 module.exports.copyFilteredFilesPromise = function (folderPath, hours) {
   var tmpFolderPath, results;
-  return _q["default"].promise(function (rsv, rej) {
+  return Q.promise(function (rsv, rej) {
     listFilteredFilesPromise({
       folderPath: folderPath,
       filterHandler: function filterHandler(a) {
-        return a.isFile && a.mtime && _hdlUtil["default"].getTimeGap(a.mtime, new Date(), 'h') < 24;
+        return a.isFile && a.mtime && hdlUtil.getTimeGap(a.mtime, new Date(), 'h') < 24;
       },
       isRecur: true
     }).then(function (feed) {
-      var folderName = _path["default"].basename(folderPath);
+      var folderName = Path.basename(folderPath);
+      var parentFolderPath = Path.dirname(folderPath);
+      tmpFolderPath = Path.resolve(parentFolderPath, ".".concat(folderName));
 
-      var parentFolderPath = _path["default"].dirname(folderPath);
-
-      tmpFolderPath = _path["default"].resolve(parentFolderPath, ".".concat(folderName));
-
-      if (!_fs["default"].existsSync(tmpFolderPath)) {
+      if (!fs.existsSync(tmpFolderPath)) {
         mkdirSync(tmpFolderPath);
       }
 
@@ -254,9 +252,9 @@ module.exports.copyFilteredFilesPromise = function (folderPath, hours) {
         return b;
       });
       var qAll = results.map(function (a) {
-        var dir = _path["default"].dirname(a.destPath);
+        var dir = Path.dirname(a.destPath);
 
-        if (!_fs["default"].existsSync(dir)) {
+        if (!fs.existsSync(dir)) {
           mkdirSync(dir);
         }
 
@@ -264,7 +262,7 @@ module.exports.copyFilteredFilesPromise = function (folderPath, hours) {
           overwrite: 'Y'
         });
       });
-      return _q["default"].all(qAll);
+      return Q.all(qAll);
     }).then(function () {
       var modFiles = results.map(function (a) {
         return a.absPath;

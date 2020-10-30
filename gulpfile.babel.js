@@ -1,8 +1,14 @@
-import { dest, series, src, task } from 'gulp';
-import babel from 'gulp-babel';
-import del from 'gulp-clean';
-import eslint from 'gulp-eslint';
-import sourcemaps from 'gulp-sourcemaps';
+// import { dest, series, src, task } from 'gulp';
+// import babel from 'gulp-babel';
+// import del from 'gulp-clean';
+// import eslint from 'gulp-eslint';
+// import sourcemaps from 'gulp-sourcemaps';
+
+const { dest, series, src/* , task */ } = require('gulp');
+const babel = require('gulp-babel');
+const del =  require('gulp-clean');
+const eslint=  require('gulp-eslint');
+const sourcemaps=  require('gulp-sourcemaps');
 
 function build () {
 	return src(['src/*.js', 'src/**/*.js'])

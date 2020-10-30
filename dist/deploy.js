@@ -8,25 +8,35 @@ var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime/helpers/cl
 
 var _createClass2 = _interopRequireDefault(require("@babel/runtime/helpers/createClass"));
 
-var _path = _interopRequireDefault(require("path"));
-
-var _fs = _interopRequireDefault(require("fs"));
-
-var _q = _interopRequireDefault(require("q"));
-
-var _zipFolder = _interopRequireDefault(require("zip-folder"));
-
-var _lodash = _interopRequireDefault(require("lodash"));
-
-var _hdlUtil = _interopRequireDefault(require("./helpers/hdlUtil"));
-
-var _fsUtil = _interopRequireDefault(require("./helpers/fsUtil"));
-
-var _nodeSsh = require("node-ssh");
-
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { (0, _defineProperty2["default"])(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+/* eslint-disable arrow-parens */
+// import Path from 'path'
+// import fs from 'fs'
+// import Q from 'q';
+// // import zipFolder from 'zip-folder';
+// import archiver from 'archiver'
+// import _L from 'lodash';
+// import hdlUtil from './helpers/hdlUtil';
+// import fsUtil from './helpers/fsUtil';
+// import { NodeSSH } from 'node-ssh'
+var Path = require('path');
+
+var fs = require('fs');
+
+var Q = require('q');
+
+var archiver = require('archiver'); // const _L = require('lodash');
+
+
+var hdlUtil = require('./helpers/hdlUtil');
+
+var fsUtil = require('./helpers/fsUtil');
+
+var _require = require('node-ssh'),
+    NodeSSH = _require.NodeSSH;
 
 var _defaultInitScript = ['#!/bin/bash', '# author: WangFan', '# description: backup server directory', 'time1=$(date +"%Y-%m-%dT%H-%M-%S")', 'str1=\'server.\'', 'str2=\'改前.tar.gz\'', 'time2=$str1$time1$str2', 'tar -czvf $time2 server &&', 'unzip -o server.zip -d ${destFolderPath} &&', 'sleep 2 &&', 'rm -f server.zip &', 'nohup forever stop index.js &', 'forever start -o nohup.out -e nohup.out index.js'].join('\n');
 
@@ -41,7 +51,7 @@ var Deploy = /*#__PURE__*/function () {
     for (var _i = 0, _mandatoryFields = mandatoryFields; _i < _mandatoryFields.length; _i++) {
       var fd = _mandatoryFields[_i];
 
-      if (!_hdlUtil["default"].getDeepVal(args, fd)) {
+      if (!hdlUtil.getDeepVal(args, fd)) {
         throw new Error("mandatory field \"".concat(fd, "\" is missing"));
       }
     }
@@ -67,12 +77,14 @@ var Deploy = /*#__PURE__*/function () {
           destFolderPath = _ref.destFolderPath;
 
       if (this.args.initScript) {
-        return _q["default"].resolve(this.args.initScript);
+        return Q.resolve(this.args.initScript);
       } // const destFolderPath = this.args.destFolderPath;
 
 
       var author = this.args.author;
-      return _q["default"].promise(function (rsv, rej) {
+      return Q.promise(function (rsv
+      /* , rej */
+      ) {
         /* const bashFilePath = Path.resolve(__dirname, 'helpers/backupServer.sh');
         fs.readFile(bashFilePath, 'utf8', (err, rst) => {
             if (err) {
@@ -100,15 +112,15 @@ var Deploy = /*#__PURE__*/function () {
   }, {
     key: "removeFilePromise",
     value: function removeFilePromise(filePath) {
-      return _q["default"].promise(function (rsv
+      return Q.promise(function (rsv
       /* , rej */
       ) {
         // eslint-disable-next-line no-sync
-        if (!_fs["default"].existsSync(filePath)) {
+        if (!fs.existsSync(filePath)) {
           return rsv("removeFilePromise #111 not found: ".concat(filePath));
         }
 
-        _fs["default"].unlink(filePath, function (err) {
+        fs.unlink(filePath, function (err) {
           if (err) {
             console.error('removefilePromise #27', err);
           }
@@ -120,16 +132,16 @@ var Deploy = /*#__PURE__*/function () {
   }, {
     key: "removeFolderPromise",
     value: function removeFolderPromise(folerPath) {
-      return _q["default"].promise(function (rsv, rej) {
+      return Q.promise(function (rsv, rej) {
         // delete directory recursively
-        _fs["default"].rmdir(folerPath, {
+        fs.rmdir(folerPath, {
           recursive: true
         }, function (err) {
           if (err) {
             console.error("fail to delete ".concat(folerPath, ", ERROR:"), err);
             rej(err);
           } else {
-            console.log(_hdlUtil["default"].date2string(new Date(), 'ms'), "#268 ".concat(folerPath, " is deleted!"));
+            console.log(hdlUtil.date2string(new Date(), 'ms'), "#268 ".concat(folerPath, " is deleted!"));
             rsv(null);
           }
         });
@@ -140,36 +152,119 @@ var Deploy = /*#__PURE__*/function () {
      * @param {String} options options.deleteFolder Y 压缩后删除文件 
      * @returns {String} zipPath
      * */
+    // zipFolderHandler (folderPath, options = {}) {
+    //     if (_L.endsWith(folderPath, Path.sep)) {
+    //         folderPath = folderPath.slice(0, folderPath.length - 1);
+    //     }
+    //     const zipPath = _L.trim(hdlUtil.getDeepVal(options, 'zipPath') || `${folderPath}.zip`);
+    //     return Q.promise(function (rsv, rej) {
+    //         // eslint-disable-next-line no-sync
+    //         if (!fs.existsSync(folderPath)) {
+    //             return rsv({ code: 113 });
+    //         }
+    //         zipFolder(folderPath, zipPath, err => {
+    //             if (err) {
+    //                 rej(err)
+    //             } else {
+    //                 rsv({ code: 111, zipPath });
+    //             }
+    //         });
+    //     });
+    // }
+
+    /**
+     * 压缩文件夹
+     */
 
   }, {
-    key: "zipFolderHandler",
-    value: function zipFolderHandler(folderPath) {
-      var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    key: "archiveFolderPromise",
+    value: function archiveFolderPromise(folderPath, targetPath) {
+      return Q.promise(function (rsv, rej) {
+        var promiseReturned = false;
 
-      if (_lodash["default"].endsWith(folderPath, _path["default"].sep)) {
-        folderPath = folderPath.slice(0, folderPath.length - 1);
-      }
+        if (!fs.existsSync(folderPath)) {
+          return rej({
+            code: 110,
+            msg: "folderPath not exists: ".concat(folderPath)
+          });
+        }
+        /*
+            stats.isFile()
+            stats.isDirectory()
+            stats.isBlockDevice()
+            stats.isCharacterDevice()
+            stats.isSymbolicLink() (only valid with fs.lstat())
+            stats.isFIFO()
+            stats.isSocket()
+        */
 
-      var zipPath = _lodash["default"].trim(_hdlUtil["default"].getDeepVal(options, 'zipPath') || "".concat(folderPath, ".zip"));
 
-      return _q["default"].promise(function (rsv, rej) {
-        // eslint-disable-next-line no-sync
-        if (!_fs["default"].existsSync(folderPath)) {
-          return rsv({
-            code: 113
+        if (!fs.lstatSync(folderPath).isDirectory()) {
+          return rej({
+            code: 110,
+            msg: "folderPath is not of folder: ".concat(folderPath)
           });
         }
 
-        (0, _zipFolder["default"])(folderPath, zipPath, function (err) {
-          if (err) {
-            rej(err);
-          } else {
-            rsv({
-              code: 111,
-              zipPath: zipPath
-            });
+        if (!targetPath) {
+          targetPath = "".concat(folderPath, ".zip"); // Zip 文件不带.开头
+        } // create a file to stream archive data to.
+
+
+        var output = fs.createWriteStream(targetPath);
+        var archive = archiver('zip', {
+          zlib: {
+            level: 9
+          } // Sets the compression level.
+
+        }); // listen for all archive data to be written
+        // 'close' event is fired only when a file descriptor is involved
+
+        output.on('close', function () {
+          console.log(archive.pointer() + ' total bytes');
+          console.log('archiver has been finalized and the output file descriptor has closed.');
+
+          if (promiseReturned) {
+            return;
           }
+
+          promiseReturned = true;
+          rsv({
+            sourcePath: folderPath,
+            targetPath: targetPath
+          });
         });
+        output.on('end', function () {
+          console.log('Data has been drained');
+
+          if (promiseReturned) {
+            return;
+          }
+
+          promiseReturned = true;
+          rsv({
+            sourcePath: folderPath,
+            targetPath: targetPath
+          });
+        }); // good practice to catch this error explicitly
+
+        archive.on('error', function (err) {
+          // throw err;
+          if (promiseReturned) {
+            return;
+          }
+
+          promiseReturned = true;
+          rej(err);
+        }); // pipe archive data to the file
+
+        archive.pipe(output);
+        archive.bulk([{
+          expand: true,
+          cwd: folderPath,
+          src: ['**/*']
+        }]).finalize();
+        archive.finalize();
       });
     }
   }, {
@@ -252,23 +347,21 @@ var Deploy = /*#__PURE__*/function () {
 
       var tmpFolderPath; // if modifiedHours, copy selected files to ${tmpFolderPath} first
 
-      var lastSlashIdx = srcFolderPath.lastIndexOf(_path["default"].sep);
+      var lastSlashIdx = srcFolderPath.lastIndexOf(Path.sep);
 
       if (lastSlashIdx === srcFolderPath.length - 1) {
-        lastSlashIdx = srcFolderPath.slice(0, -1).lastIndexOf(_path["default"].sep);
+        lastSlashIdx = srcFolderPath.slice(0, -1).lastIndexOf(Path.sep);
       }
 
       var leafFolderName = srcFolderPath.slice(lastSlashIdx + 1);
 
-      if (_hdlUtil["default"].endsWith(leafFolderName, _path["default"].sep)) {
+      if (hdlUtil.endsWith(leafFolderName, Path.sep)) {
         leafFolderName = leafFolderName.slice(0, leafFolderName.length - 1);
       }
 
       var zipFileName = "".concat(leafFolderName, ".zip");
       var parentFolderPath = srcFolderPath.slice(0, lastSlashIdx);
-
-      var zipPath = _path["default"].resolve(parentFolderPath, zipFileName);
-
+      var zipPath = Path.resolve(parentFolderPath, zipFileName);
       var destPathSep;
 
       if (destFolderPath.indexOf('/') !== 0 || destFolderPath.slice(0, 4).indexOf(':') > 0) {
@@ -286,62 +379,64 @@ var Deploy = /*#__PURE__*/function () {
       var parentDestFolderPath = destFolderPath.slice(0, lastSlashIdx);
       var destFilePath = "".concat(parentDestFolderPath).concat(destPathSep).concat(zipFileName); // Path.resolve(parentDestFolderPath, zipFileName);
 
-      var localBashFilePath = _path["default"].resolve(__dirname, '.backupServer.sh');
+      var localBashFilePath = Path.resolve(__dirname, '.backupServer.sh');
 
       var _this = this;
 
       var toPrint;
-      return _q["default"].promise(function (rsvRoot, rejRoot) {
+      return Q.promise(function (rsvRoot
+      /* , rejRoot */
+      ) {
         (function () {
           // eslint-disable-next-line no-sync
-          if (_fs["default"].existsSync(zipPath) && !preparedZipPath) {
+          if (fs.existsSync(zipPath) && !preparedZipPath) {
             // 不删除同一批任务留下的压缩包
             return _this3.removeFilePromise(zipPath);
           } else {
-            return _q["default"].resolve(null);
+            return Q.resolve(null);
           }
         })().then(function () {
-          if (_hdlUtil["default"].oType(modifiedHours) === 'number') {
-            if (preparedZipPath && _fs["default"].existsSync(zipPath)) {
+          if (hdlUtil.oType(modifiedHours) === 'number') {
+            if (preparedZipPath && fs.existsSync(zipPath)) {
               // 不重复制作压缩包
               return preparedTmpFolderPath;
             }
 
-            return _fsUtil["default"].copyFilteredFilesPromise(srcFolderPath, modifiedHours);
+            return fsUtil.copyFilteredFilesPromise(srcFolderPath, modifiedHours);
           } else {
             return;
           }
         }).then(function (feed) {
-          var thePath;
+          /* let thePath;
+          if(feed){
+              thePath = tmpFolderPath = feed;
+          }else{
+              thePath = srcFolderPath;
+          } */
+          tmpFolderPath = feed;
 
-          if (feed) {
-            thePath = tmpFolderPath = feed;
-          } else {
-            thePath = srcFolderPath;
-          }
-
-          if (_fs["default"].existsSync(zipPath) && preparedZipPath) {
+          if (fs.existsSync(zipPath) && preparedZipPath) {
             // 不重复制作压缩包
             return;
-          }
+          } // return this.zipFolderHandler(thePath, { zipPath });
 
-          return _this3.zipFolderHandler(thePath, {
-            zipPath: zipPath
-          });
+
+          console.log('archive #305 path:', tmpFolderPath, srcFolderPath + '.zip');
+          return _this3.archiveFolderPromise(tmpFolderPath, srcFolderPath + '.zip');
         }).then(function () {
-          if (!privateKeyPath || !_fs["default"].existsSync(privateKeyPath)) {
+          if (!privateKeyPath || !fs.existsSync(privateKeyPath)) {
             if (password) {
               return null;
             } else {
-              return _q["default"].reject({
+              return Q.reject({
                 code: 110,
                 msg: 'no password'
               });
             }
           }
 
-          return _q["default"].promise(function (rsv, rej) {
-            _fs["default"].readFile(privateKeyPath, 'utf8', function (err, rst) {
+          return Q.promise(function (rsv, rej) {
+            fs.readFile(privateKeyPath, 'utf8', function (err, rst) {
               if (err) {
                 return rej(err);
               }
@@ -350,7 +445,7 @@ var Deploy = /*#__PURE__*/function () {
             });
           });
         }).then(function (feed) {
-          _this.ssh = new _nodeSsh.NodeSSH();
+          _this.ssh = new NodeSSH();
           var sshOptions = {
             host: host,
             port: port,
@@ -369,25 +464,39 @@ var Deploy = /*#__PURE__*/function () {
           toPrint = {
             host: host,
             port: port,
-            username: username
+            username: username,
+            sshOptionsCopy: sshOptionsCopy
           };
           return _this.ssh.connect(sshOptions);
         }).then(function () {
-          if (toPrint) {
-            console.log(_hdlUtil["default"].date2string(new Date(), 'ms'), 'SSH Login:', toPrint);
-          }
+          return Q.promise(function (rsv, rej) {
+            if (toPrint) {
+              console.log(hdlUtil.date2string(new Date(), 'ms'), 'SSH Login:', toPrint, '|', zipPath, '->', destFilePath);
+            }
 
-          return _q["default"].promise(function (rsv, rej) {
-            _this.ssh.putFile(zipPath, destFilePath).then(function () {
+            _this.ssh.putFile(zipPath, destFilePath, undefined, {
+              step: function step(total_transferred, chunk, total) {
+                console.log('Uploaded', total_transferred, 'of', total);
+              }
+            })
+            /* _this.ssh.putFiles([{ local: zipPath, remote: destFilePath }]) */
+            .then(function () {
               rsv({
                 destFilePath: destFilePath,
-                msg: 'OK',
-                zipPath: zipPath
+                zipPath: zipPath,
+                msg: 'OK'
               });
             }, function (error) {
               rej(error);
             });
-          });
+          }); // return Q.promise((rsv, rej) => {
+          //     _this.ssh.putFile(zipPath, destFilePath).then(function () {
+          //         rsv({ destFilePath, msg: 'OK', zipPath });
+          //     }, function (error) {
+          //         rej(error);
+          //     })
+          // })
+
           /* }).then(function () {
               return Q.promise((rsv, rej) => {
                   _this.ssh.exec('ls', ['-l', zipFileName], {
@@ -410,8 +519,8 @@ var Deploy = /*#__PURE__*/function () {
             destFolderPath: destFolderPath
           });
         }).then(function (feed) {
-          return _q["default"].promise(function (rsv, rej) {
-            _fs["default"].writeFile(localBashFilePath, feed, {
+          return Q.promise(function (rsv, rej) {
+            fs.writeFile(localBashFilePath, feed, {
               encoding: 'utf8',
               mode: 420,
               flag: 'w'
@@ -426,7 +535,7 @@ var Deploy = /*#__PURE__*/function () {
         }).then(function () {
           var remoteBashFilePath = "".concat(parentDestFolderPath).concat(destPathSep, "backupServer.sh"); // Path.resolve(parentDestFolderPath, 'backupServer.sh');
 
-          return _q["default"].promise(function (rsv, rej) {
+          return Q.promise(function (rsv, rej) {
             _this.ssh.putFile(localBashFilePath, remoteBashFilePath).then(function () {
               rsv({
                 destFilePath: destFilePath,

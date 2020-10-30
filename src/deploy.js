@@ -1,12 +1,23 @@
 /* eslint-disable arrow-parens */
-import Path from 'path'
-import fs from 'fs'
-import Q from 'q';
-import zipFolder from 'zip-folder';
-import _L from 'lodash';
-import hdlUtil from './helpers/hdlUtil';
-import fsUtil from './helpers/fsUtil';
-import { NodeSSH } from 'node-ssh'
+// import Path from 'path'
+// import fs from 'fs'
+// import Q from 'q';
+// // import zipFolder from 'zip-folder';
+// import archiver from 'archiver'
+// import _L from 'lodash';
+// import hdlUtil from './helpers/hdlUtil';
+// import fsUtil from './helpers/fsUtil';
+// import { NodeSSH } from 'node-ssh'
+
+const Path = require('path');
+const fs = require('fs');
+const Q = require('q');
+const archiver = require('archiver');
+// const _L = require('lodash');
+const hdlUtil = require('./helpers/hdlUtil');
+const fsUtil = require('./helpers/fsUtil');
+const { NodeSSH } = require('node-ssh');
+// https://www.npmjs.com/package/ssh2-sftp-client
 
 const _defaultInitScript = [
     '#!/bin/bash',
@@ -53,7 +64,7 @@ class Deploy {
         }
         // const destFolderPath = this.args.destFolderPath;
         const author = this.args.author;
-        return Q.promise((rsv, rej) => {
+        return Q.promise((rsv/* , rej */) => {
             /* const bashFilePath = Path.resolve(__dirname, 'helpers/backupServer.sh');
             fs.readFile(bashFilePath, 'utf8', (err, rst) => {
                 if (err) {
@@ -111,24 +122,97 @@ class Deploy {
      * @param {String} options options.deleteFolder Y 压缩后删除文件 
      * @returns {String} zipPath
      * */
-    zipFolderHandler (folderPath, options = {}) {
-        if (_L.endsWith(folderPath, Path.sep)) {
-            folderPath = folderPath.slice(0, folderPath.length - 1);
-        }
-        const zipPath = _L.trim(hdlUtil.getDeepVal(options, 'zipPath') || `${folderPath}.zip`);
-        return Q.promise(function (rsv, rej) {
-            // eslint-disable-next-line no-sync
-            if (!fs.existsSync(folderPath)) {
-                return rsv({ code: 113 });
+    // zipFolderHandler (folderPath, options = {}) {
+    //     if (_L.endsWith(folderPath, Path.sep)) {
+    //         folderPath = folderPath.slice(0, folderPath.length - 1);
+    //     }
+    //     const zipPath = _L.trim(hdlUtil.getDeepVal(options, 'zipPath') || `${folderPath}.zip`);
+    //     return Q.promise(function (rsv, rej) {
+    //         // eslint-disable-next-line no-sync
+    //         if (!fs.existsSync(folderPath)) {
+    //             return rsv({ code: 113 });
+    //         }
+    //         zipFolder(folderPath, zipPath, err => {
+    //             if (err) {
+    //                 rej(err)
+    //             } else {
+    //                 rsv({ code: 111, zipPath });
+    //             }
+    //         });
+    //     });
+    // }
+
+    /**
+     * 压缩文件夹
+     */
+    archiveFolderPromise(folderPath, targetPath){
+        return Q.promise((rsv, rej) => {
+            let promiseReturned = false;
+            if(!fs.existsSync(folderPath)){
+                return rej({code: 110, msg: `folderPath not exists: ${folderPath}`});
             }
-            zipFolder(folderPath, zipPath, err => {
-                if (err) {
-                    rej(err)
-                } else {
-                    rsv({ code: 111, zipPath });
-                }
+            /*
+                stats.isFile()
+                stats.isDirectory()
+                stats.isBlockDevice()
+                stats.isCharacterDevice()
+                stats.isSymbolicLink() (only valid with fs.lstat())
+                stats.isFIFO()
+                stats.isSocket()
+            */
+            if(!fs.lstatSync(folderPath).isDirectory()){
+                return rej({code: 110, msg: `folderPath is not of folder: ${folderPath}`});
+            }
+            if(!targetPath){
+                targetPath = `${folderPath}.zip`; // Zip 文件不带.开头
+            }
+            
+            // create a file to stream archive data to.
+            const output = fs.createWriteStream(targetPath);
+            const archive = archiver('zip', {
+                zlib: { level: 9 } // Sets the compression level.
             });
-        });
+
+            // listen for all archive data to be written
+            // 'close' event is fired only when a file descriptor is involved
+            output.on('close', function() {
+                console.log(archive.pointer() + ' total bytes');
+                console.log('archiver has been finalized and the output file descriptor has closed.');
+                if(promiseReturned){
+                    return;
+                }
+                promiseReturned = true;
+                rsv({sourcePath: folderPath, targetPath});
+            });
+
+            output.on('end', function() {
+                console.log('Data has been drained');
+                if(promiseReturned){
+                    return;
+                }
+                promiseReturned = true;
+                rsv({sourcePath: folderPath, targetPath});
+            });
+
+            // good practice to catch this error explicitly
+            archive.on('error', function(err) {
+                // throw err;
+                if(promiseReturned){
+                    return;
+                }
+                promiseReturned = true;
+                rej(err);
+            });
+
+            // pipe archive data to the file
+            archive.pipe(output);
+
+            archive.bulk([
+                { expand: true, cwd: folderPath, src: ['**/*'] }
+            ]).finalize();
+
+            archive.finalize();
+        })
     }
 
     exec () {
@@ -192,7 +276,7 @@ class Deploy {
         const localBashFilePath = Path.resolve(__dirname, '.backupServer.sh');
         const _this = this;
         let toPrint;
-        return Q.promise((rsvRoot, rejRoot) => {
+        return Q.promise((rsvRoot/* , rejRoot */) => {
             (() => {
                 // eslint-disable-next-line no-sync
                 if(fs.existsSync(zipPath) && !preparedZipPath){ // 不删除同一批任务留下的压缩包
@@ -210,16 +294,19 @@ class Deploy {
                     return;
                 }
             }).then(feed => {
-                let thePath;
+                /* let thePath;
                 if(feed){
                     thePath = tmpFolderPath = feed;
                 }else{
                     thePath = srcFolderPath;
-                }
+                } */
+                tmpFolderPath = feed;
                 if(fs.existsSync(zipPath) && preparedZipPath){ // 不重复制作压缩包
                     return;
                 }
-                return this.zipFolderHandler(thePath, { zipPath });
+                // return this.zipFolderHandler(thePath, { zipPath });
+                console.log('archive #305 path:', tmpFolderPath, srcFolderPath+'.zip');
+                return this.archiveFolderPromise(tmpFolderPath, srcFolderPath+'.zip');
             }).then(() => {
                 if(!privateKeyPath || !fs.existsSync(privateKeyPath)){
                     if(password){
@@ -250,19 +337,31 @@ class Deploy {
                 }
                 const sshOptionsCopy = { ...sshOptions };
                 delete sshOptionsCopy.privateKey;
-                toPrint = {host, port, username}
+                toPrint = {host, port, username, sshOptionsCopy}
                 return _this.ssh.connect(sshOptions);
             }).then(() => {
-                if(toPrint){
-                    console.log(hdlUtil.date2string(new Date(), 'ms'), 'SSH Login:', toPrint);
-                }
                 return Q.promise((rsv, rej) => {
-                    _this.ssh.putFile(zipPath, destFilePath).then(function () {
-                        rsv({ destFilePath, msg: 'OK', zipPath });
+                    if(toPrint){
+                        console.log(hdlUtil.date2string(new Date(), 'ms'), 'SSH Login:', toPrint, '|', zipPath, '->', destFilePath);
+                    }
+                    _this.ssh.putFile(zipPath, destFilePath, undefined, {
+                        step: (total_transferred, chunk, total) => {
+                            console.log('Uploaded', total_transferred, 'of', total);
+                        }
+                    })
+                    /* _this.ssh.putFiles([{ local: zipPath, remote: destFilePath }]) */.then(function () {
+                        rsv({ destFilePath, zipPath, msg: 'OK' });
                     }, function (error) {
                         rej(error);
                     })
                 })
+                // return Q.promise((rsv, rej) => {
+                //     _this.ssh.putFile(zipPath, destFilePath).then(function () {
+                //         rsv({ destFilePath, msg: 'OK', zipPath });
+                //     }, function (error) {
+                //         rej(error);
+                //     })
+                // })
             /* }).then(function () {
                 return Q.promise((rsv, rej) => {
                     _this.ssh.exec('ls', ['-l', zipFileName], {

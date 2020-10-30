@@ -27,6 +27,7 @@
     "url": "http://github.com/JinJinHrb/forever-ssh-deploy/issues"
   },
   "dependencies": {
+    "archiver": "^0.11.0",
     "circular-json": "^0.5.9",
     "lodash": "^4.17.20",
     "node-ssh": "^11.0.0",
@@ -35,13 +36,13 @@
   },
   "devDependencies": {
     "@babel/cli": "^7.8.4",
+    "@babel/compat-data": "^7.9.0",
     "@babel/core": "^7.8.7",
     "@babel/plugin-transform-runtime": "^7.8.3",
-    "@babel/preset-env": "^7.8.7",
     "@babel/polyfill": "^7.8.7",
+    "@babel/preset-env": "^7.8.7",
     "@babel/register": "^7.8.6",
     "@babel/runtime": "^7.8.7",
-    "@babel/compat-data": "^7.9.0",
     "babel-eslint": "^10.1.0",
     "eslint-plugin-babel": "^5.3.0",
     "gulp": "^4.0.2",
