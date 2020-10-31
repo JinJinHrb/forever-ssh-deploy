@@ -2,9 +2,15 @@
 
 var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
 
+var _defineProperty2 = _interopRequireDefault(require("@babel/runtime/helpers/defineProperty"));
+
 var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime/helpers/classCallCheck"));
 
 var _createClass2 = _interopRequireDefault(require("@babel/runtime/helpers/createClass"));
+
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { (0, _defineProperty2["default"])(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
 /* eslint-disable arrow-parens */
 // import Path from 'path'
@@ -18,7 +24,8 @@ var _createClass2 = _interopRequireDefault(require("@babel/runtime/helpers/creat
 // import { NodeSSH } from 'node-ssh'
 var Path = require('path');
 
-var fs = require('fs');
+var fs = require('fs'); // const rimraf = require("rimraf");
+
 
 var Q = require('q');
 
@@ -33,7 +40,7 @@ var fsUtil = require('./helpers/fsUtil'); // const { NodeSSH } = require('node-s
 
 var Ssh2SftpClient = require('ssh2-sftp-client');
 
-var _defaultInitScript = ['#!/bin/bash', '# author: WangFan', '# description: backup server directory', 'time1=$(date +"%Y-%m-%dT%H-%M-%S")', 'str1=\'server.\'', 'str2=\'改前.tar.gz\'', 'time2=$str1$time1$str2', 'tar -czvf $time2 server &&', 'unzip -o server.zip -d ${destFolderPath} &&', 'sleep 2 &&', 'rm -f server.zip &', 'nohup forever stop index.js &', 'forever start -o nohup.out -e nohup.out index.js'].join('\n');
+var _defaultInitScript = ['#!/bin/bash', '# author: WangFan', '# description: backup server directory', 'time1=$(date +"%Y-%m-%dT%H-%M-%S")', "str1='server.'", "str2='.WangFan.backup.tar.gz'", 'time2=$str1$time1$str2', 'tar -czvf $time2 server &&', ' unzip server.zip &&', ' nohup forever stop index.js &&', ' rm -f server.zip &&', ' forever start --minUptime 1000 --spinSleepTime 10000 -o nohup.out -e nohup.out index.js'].join('\n');
 
 var Deploy = /*#__PURE__*/function () {
   function Deploy() {
@@ -123,7 +130,8 @@ var Deploy = /*#__PURE__*/function () {
           rsv(filePath);
         });
       });
-    }
+    } // rimraf("/some/directory", function () { console.log("done"); });
+
   }, {
     key: "removeFolderPromise",
     value: function removeFolderPromise(folerPath) {
@@ -368,10 +376,16 @@ var Deploy = /*#__PURE__*/function () {
       var parentDestFolderPath = destFolderPath.slice(0, lastSlashIdx);
       var destFilePath = "".concat(parentDestFolderPath).concat(destPathSep).concat(zipFileName); // Path.resolve(parentDestFolderPath, zipFileName);
 
-      var localBashFilePath = Path.resolve(__dirname, '.backupServer.sh');
-      var sshClient
+      var localBashFilePath = Path.resolve(__dirname, '.backupServer.sh'); // const remoteBashFilePath = `${parentDestFolderPath}${destPathSep}backupServer.sh`;
+
+      var
+      /* sshClient1, */
+      sshClient2;
+      /* isBackupScriptExist */
+
       /* , toPrint */
-      ;
+
+      var sshOptions = {};
       return Q.promise(function (rsvRoot
       /* , rejRoot */
       ) {
@@ -379,6 +393,7 @@ var Deploy = /*#__PURE__*/function () {
           // eslint-disable-next-line no-sync
           if (fs.existsSync(zipPath) && !preparedZipPath) {
             // 不删除同一批任务留下的压缩包
+            console.log('#284 remove file:', zipPath);
             return _this3.removeFilePromise(zipPath);
           } else {
             return Q.resolve(null);
@@ -395,19 +410,12 @@ var Deploy = /*#__PURE__*/function () {
             return;
           }
         }).then(function (feed) {
-          /* let thePath;
-          if(feed){
-              thePath = tmpFolderPath = feed;
-          }else{
-              thePath = srcFolderPath;
-          } */
           tmpFolderPath = feed;
 
           if (fs.existsSync(zipPath) && preparedZipPath) {
             // 不重复制作压缩包
             return;
-          } // return this.zipFolderHandler(thePath, { zipPath });
-
+          }
 
           console.log('archive #305 path:', tmpFolderPath, srcFolderPath + '.zip');
           return _this3.archiveFolderPromise(tmpFolderPath, srcFolderPath + '.zip');
@@ -433,137 +441,55 @@ var Deploy = /*#__PURE__*/function () {
             });
           });
         }).then(function (feed) {
-          // sshClient = new NodeSSH();
-          sshClient = new Ssh2SftpClient();
-          var sshOptions = {
-            host: host,
-            port: port,
-            username: username
-          };
+          // sshClient1 = new NodeSSH();
+          sshClient2 = new Ssh2SftpClient();
+          sshOptions.host = host;
+          sshOptions.port = port;
+          sshOptions.username = username;
 
           if (feed) {
             sshOptions.privateKey = feed;
           } else {
             sshOptions.password = password;
-          } // const sshOptionsCopy = { ...sshOptions };
-          // delete sshOptionsCopy.privateKey;
-          // toPrint = {host, port, username, sshOptionsCopy}
+          }
 
+          var sshOptionsCopy = _objectSpread({}, sshOptions);
 
-          return sshClient.connect(sshOptions);
-        }).then(function () {
-          var deferred = Q.defer();
+          delete sshOptionsCopy.privateKey;
+          console.log('#339 connect:', sshOptionsCopy);
+          /* return sshClient1.connect(sshOptions)
+          }).then(() => {
+          const deferred = Q.defer();
           setTimeout(function () {
-            deferred.resolve();
-          }, 1000);
+              deferred.resolve()
+          }, 1500);
           return deferred.promise;
+          }).then(() => { */
+
+          return sshClient2.connect(sshOptions);
         }).then(function () {
-          return sshClient.put(zipPath, destFilePath);
-          /* return Q.promise((rsv, rej) => {
-              sshClient.putFile(zipPath, destFilePath, undefined, {
-                  step: (total_transferred, chunk, total) => {
-                      console.log('Uploaded', total_transferred, 'of', total);
-                  }
-              }).then(function () {
-                  rsv({ destFilePath, msg: 'OK', zipPath });
+          console.log('#358', zipPath, '->', destFilePath);
+          return sshClient2.put(zipPath, destFilePath);
+        })
+        /*.then(() => {
+          return this.getInitScriptPromise({leafFolderName, destFolderPath});
+        }).then(feed => {
+          return Q.promise((rsv, rej) => {
+              const strBuf = Buffer.from(feed, 'utf-8');
+              sshClient2.put(strBuf, remoteBashFilePath).then(function () {
+                  rsv({ destFilePath, msg: 'OK' });
               }, function (error) {
                   rej(error);
               })
-          }) */
-
-          /* }).then(function () {
-              return Q.promise((rsv, rej) => {
-                  _this.ssh.exec('ls', ['-l', zipFileName], {
-                      cwd: parentDestFolderPath,
-                      onStdout (chunk) {
-                          const str = chunk.toString('utf8');
-                          console.log('#108 stdoutChunk:', str)
-                          rsv(str)
-                      },
-                      onStderr (chunk) {
-                          const str = chunk.toString('utf8');
-                          console.log('#113 stderrChunk:', str)
-                          rej(str);
-                      }
-                  })
-              }) */
-        }).then(function () {
-          return _this3.getInitScriptPromise({
-            leafFolderName: leafFolderName,
-            destFolderPath: destFolderPath
           });
-        }).then(function (feed) {
-          return Q.promise(function (rsv, rej) {
-            fs.writeFile(localBashFilePath, feed, {
-              encoding: 'utf8',
-              mode: 420,
-              flag: 'w'
-            }, function (err, rst) {
-              if (err) {
-                rej(err);
-              } else {
-                rsv(rst);
-              }
-            });
-          });
-        }).then(function () {
-          var remoteBashFilePath = "".concat(parentDestFolderPath).concat(destPathSep, "backupServer.sh"); // Path.resolve(parentDestFolderPath, 'backupServer.sh');
-
-          return Q.promise(function (rsv, rej) {
-            /* sshClient.putFile(localBashFilePath, remoteBashFilePath).then(function () {
-                rsv({ destFilePath, msg: 'OK', zipPath });
-            }, function (error) {
-                rej(error);
-            }) */
-            sshClient.put(localBashFilePath, remoteBashFilePath).then(function () {
-              rsv({
-                destFilePath: destFilePath,
-                msg: 'OK',
-                zipPath: zipPath
-              });
-            }, function (error) {
-              rej(error);
-            });
-          });
-        })
-        /* .then(() => { // WangFan TODO 2020-10-31 08:46:32
-          return sshClient.execCommand('chmod +x backupServer.sh', { cwd: parentDestFolderPath })
+        }) .then(() => {
+          return sshClient1.execCommand('chmod +x backupServer.sh', { cwd: parentDestFolderPath });
         }).then(() => {
-          return sshClient.execCommand('./backupServer.sh', { cwd: parentDestFolderPath });
-        }) */
-
-        /* .then(() => {
-        const qAll = [];
-        qAll.push( this.removeFilePromise(zipPath) );
-        qAll.push( this.removeFilePromise(localBashFilePath) );
-        return Q.all(qAll);
-        }) */
-
-        /* .then(() => {
-        const deferred = Q.defer();
-        setTimeout(function(){deferred.resolve()}, 10000);
-        return deferred.promise;
-        }) */
-
-        /* .then(() => {
-        if(!tmpFolderPath){
-           return;
-        }
-        return Q.promise((rsv, rej) => {
-           // delete directory recursively
-           fs.rmdir(tmpFolderPath, { recursive: true }, (err) => {
-               if (err) {
-                   rej(err);
-               }else{
-                   console.log(`#268 ${tmpFolderPath} is deleted!`);
-                   rsv(null);
-               }
-           });
-        })
+          return sshClient1.execCommand('./backupServer.sh', { cwd: parentDestFolderPath });
         }) */
         .then(function () {
-          // sshClient.dispose();
-          sshClient.end();
+          // sshClient1.dispose();
+          sshClient2.end();
           rsvRoot({
             code: 111,
             msg: 'OK',
