@@ -32,6 +32,7 @@
     "lodash": "^4.17.20",
     "node-ssh": "^11.0.0",
     "q": "^1.5.1",
+    "ssh2-sftp-client": "^5.3.1",
     "zip-folder": "^1.0.0"
   },
   "devDependencies": {

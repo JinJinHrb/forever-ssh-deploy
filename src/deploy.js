@@ -16,8 +16,9 @@ const archiver = require('archiver');
 // const _L = require('lodash');
 const hdlUtil = require('./helpers/hdlUtil');
 const fsUtil = require('./helpers/fsUtil');
-const { NodeSSH } = require('node-ssh');
+// const { NodeSSH } = require('node-ssh');
 // https://www.npmjs.com/package/ssh2-sftp-client
+const Ssh2SftpClient = require('ssh2-sftp-client');
 
 const _defaultInitScript = [
     '#!/bin/bash',
@@ -187,11 +188,11 @@ class Deploy {
 
             output.on('end', function() {
                 console.log('Data has been drained');
-                if(promiseReturned){
-                    return;
-                }
-                promiseReturned = true;
-                rsv({sourcePath: folderPath, targetPath});
+                // if(promiseReturned){
+                //     return;
+                // }
+                // promiseReturned = true;
+                // rsv({sourcePath: folderPath, targetPath});
             });
 
             // good practice to catch this error explicitly
@@ -274,8 +275,7 @@ class Deploy {
         const parentDestFolderPath = destFolderPath.slice(0, lastSlashIdx);
         const destFilePath = `${parentDestFolderPath}${destPathSep}${zipFileName}`; // Path.resolve(parentDestFolderPath, zipFileName);
         const localBashFilePath = Path.resolve(__dirname, '.backupServer.sh');
-        const _this = this;
-        let toPrint;
+        let sshClient/* , toPrint */;
         return Q.promise((rsvRoot/* , rejRoot */) => {
             (() => {
                 // eslint-disable-next-line no-sync
@@ -324,7 +324,8 @@ class Deploy {
                     })
                 })
             }).then(( feed ) => {
-                _this.ssh = new NodeSSH();
+                // sshClient = new NodeSSH();
+                sshClient = new Ssh2SftpClient();
                 const sshOptions = {
                     host,
                     port,
@@ -335,33 +336,29 @@ class Deploy {
                 }else{
                     sshOptions.password = password;
                 }
-                const sshOptionsCopy = { ...sshOptions };
-                delete sshOptionsCopy.privateKey;
-                toPrint = {host, port, username, sshOptionsCopy}
-                return _this.ssh.connect(sshOptions);
+                // const sshOptionsCopy = { ...sshOptions };
+                // delete sshOptionsCopy.privateKey;
+                // toPrint = {host, port, username, sshOptionsCopy}
+                return sshClient.connect(sshOptions);
             }).then(() => {
-                return Q.promise((rsv, rej) => {
-                    if(toPrint){
-                        console.log(hdlUtil.date2string(new Date(), 'ms'), 'SSH Login:', toPrint, '|', zipPath, '->', destFilePath);
-                    }
-                    _this.ssh.putFile(zipPath, destFilePath, undefined, {
+                const deferred = Q.defer();
+                setTimeout(function () {
+                    deferred.resolve()
+                }, 1000);
+                return deferred.promise;
+            }).then(() => {
+                return sshClient.put(zipPath, destFilePath);
+                /* return Q.promise((rsv, rej) => {
+                    sshClient.putFile(zipPath, destFilePath, undefined, {
                         step: (total_transferred, chunk, total) => {
                             console.log('Uploaded', total_transferred, 'of', total);
                         }
-                    })
-                    /* _this.ssh.putFiles([{ local: zipPath, remote: destFilePath }]) */.then(function () {
-                        rsv({ destFilePath, zipPath, msg: 'OK' });
+                    }).then(function () {
+                        rsv({ destFilePath, msg: 'OK', zipPath });
                     }, function (error) {
                         rej(error);
                     })
-                })
-                // return Q.promise((rsv, rej) => {
-                //     _this.ssh.putFile(zipPath, destFilePath).then(function () {
-                //         rsv({ destFilePath, msg: 'OK', zipPath });
-                //     }, function (error) {
-                //         rej(error);
-                //     })
-                // })
+                }) */
             /* }).then(function () {
                 return Q.promise((rsv, rej) => {
                     _this.ssh.exec('ls', ['-l', zipFileName], {
@@ -393,17 +390,22 @@ class Deploy {
             }).then(() => {
                 const remoteBashFilePath = `${parentDestFolderPath}${destPathSep}backupServer.sh`; // Path.resolve(parentDestFolderPath, 'backupServer.sh');
                 return Q.promise((rsv, rej) => {
-                    _this.ssh.putFile(localBashFilePath, remoteBashFilePath).then(function () {
+                    /* sshClient.putFile(localBashFilePath, remoteBashFilePath).then(function () {
+                        rsv({ destFilePath, msg: 'OK', zipPath });
+                    }, function (error) {
+                        rej(error);
+                    }) */
+                    sshClient.put(localBashFilePath, remoteBashFilePath).then(function () {
                         rsv({ destFilePath, msg: 'OK', zipPath });
                     }, function (error) {
                         rej(error);
                     })
                 })
+            })/* .then(() => { // WangFan TODO 2020-10-31 08:46:32
+                return sshClient.execCommand('chmod +x backupServer.sh', { cwd: parentDestFolderPath })
             }).then(() => {
-                return _this.ssh.execCommand('chmod +x backupServer.sh', { cwd: parentDestFolderPath })
-            }).then(() => {
-                return _this.ssh.execCommand('./backupServer.sh', { cwd: parentDestFolderPath });
-            })/* .then(() => {
+                return sshClient.execCommand('./backupServer.sh', { cwd: parentDestFolderPath });
+            }) *//* .then(() => {
                 const qAll = [];
                 qAll.push( this.removeFilePromise(zipPath) );
                 qAll.push( this.removeFilePromise(localBashFilePath) );
@@ -428,7 +430,8 @@ class Deploy {
                     });
                 })
             }) */.then(() => {
-                _this.ssh.dispose();
+                // sshClient.dispose();
+                sshClient.end();
                 rsvRoot({code: 111, msg: 'OK', tmpFolderPath, localBashFilePath, zipPath});
             }).done(null, err => {
                 if (!err) {
